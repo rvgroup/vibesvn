@@ -269,7 +269,8 @@ class _CommitScreenState extends State<CommitScreen> {
       // Добавляем новые файлы в SVN
       for (final file in selectedFiles) {
         if (file.status == '?') {
-          final addResult = await SvnService.add('${widget.repository.localPath}/${file.path}');
+          // Используем workingDirectory для выполнения команды в папке репозитория
+          final addResult = await SvnService.add(file.path, workingDirectory: widget.repository.localPath);
           if (!addResult.success) {
             ErrorHelper.showSvnError(context, addResult, 'Ошибка добавления файла ${file.path}');
             return;
