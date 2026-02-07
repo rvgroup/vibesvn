@@ -8,25 +8,33 @@ import 'services/window_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize EasyLocalization
-  await EasyLocalization.ensureInitialized();
-  
-  // Initialize window manager
-  await WindowService.initializeWindow();
-  
-  // Initialize theme service
-  ThemeService().initialize();
-  
-  runApp(EasyLocalization(
-    supportedLocales: const [
-      Locale('en'),
-      Locale('ru'),
-    ],
-    path: 'assets/translations',
-    fallbackLocale: const Locale('en'),
-    assetLoader: const RootBundleAssetLoader(),
-    child: const MyApp(),
-  ));
+  try {
+    // Initialize EasyLocalization
+    await EasyLocalization.ensureInitialized();
+    
+    // Initialize window manager
+    await WindowService.initializeWindow();
+    
+    // Initialize theme service
+    ThemeService().initialize();
+    
+    runApp(EasyLocalization(
+      supportedLocales: const [
+        Locale('en'),
+        Locale('ru'),
+      ],
+      path: 'assets/translations',
+      fallbackLocale: const Locale('en'),
+      assetLoader: const RootBundleAssetLoader(),
+      child: const MyApp(),
+    ));
+  } catch (e, stackTrace) {
+    debugPrint('Error during initialization: $e');
+    debugPrint('Stack trace: $stackTrace');
+    
+    // Fallback app without localization
+    runApp(const MyAppFallback());
+  }
 }
 
 class MyApp extends StatefulWidget {
@@ -66,6 +74,37 @@ class _MyAppState extends State<MyApp> {
           home: const MainScreen(),
         );
       },
+    );
+  }
+}
+
+class MyAppFallback extends StatelessWidget {
+  const MyAppFallback({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'VibeSVN',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+      ),
+      home: const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error, size: 64, color: Colors.red),
+              SizedBox(height: 16),
+              Text('VibeSVN', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
+              Text('Initialization failed', style: TextStyle(color: Colors.grey)),
+              SizedBox(height: 16),
+              Text('Please check console for details', style: TextStyle(fontSize: 12)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

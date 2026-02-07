@@ -28,5 +28,24 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>VibeSVN needs access to your documents folder to manage SVN repositories.</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>VibeSVN needs access to your desktop folder to manage SVN repositories.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>VibeSVN needs access to your downloads folder to manage SVN repositories.</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>*</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>All Files</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+		</dict>
+	</array>
 </dict>
 </plist>
