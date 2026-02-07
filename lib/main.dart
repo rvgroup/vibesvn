@@ -27,6 +27,12 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     _themeService.initialize();
   }
+  
+  @override
+  void dispose() {
+    WindowService.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -32,6 +32,7 @@ class _CommitScreenState extends State<CommitScreen> {
   bool _isLoading = false;
   bool _isCommitting = false;
   bool _isLoadingHistory = false;
+  Set<String> _selectedStatuses = {}; // Выбранные статусы для фильтрации
 
   @override
   void initState() {
@@ -318,7 +319,97 @@ class _CommitScreenState extends State<CommitScreen> {
     }
   }
 
-  String _getStatusText(String status) {
+  void _toggleStatusSelection(String status) {
+    setState(() {
+      if (_selectedStatuses.contains(status)) {
+        _selectedStatuses.remove(status);
+      } else {
+        _selectedStatuses.add(status);
+      }
+    });
+  }
+
+  void _selectFilesByStatus(String status, bool select) {
+    setState(() {
+      for (final file in _files) {
+        if (file.status == status) {
+          file.isSelected = select;
+        }
+      }
+    });
+  }
+
+  void _toggleFilesByStatus(String status) {
+    final filesWithStatus = _files.where((file) => file.status == status).toList();
+    if (filesWithStatus.isEmpty) return;
+    
+    final allSelected = filesWithStatus.every((file) => file.isSelected);
+    _selectFilesByStatus(status, !allSelected);
+  }
+
+  int _getFilesCountByStatus(String status) {
+    return _files.where((file) => file.status == status).length;
+  }
+
+  int _getSelectedFilesCountByStatus(String status) {
+    return _files.where((file) => file.status == status && file.isSelected).length;
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'M':  // Modified - измененные файлы
+        return Colors.blue;
+      case 'A':  // Added - новые файлы
+        return Colors.green;
+      case 'D':  // Deleted - удаленные файлы
+        return Colors.red;
+      case '?':  // Untracked - неотслеживаемые файлы
+        return Colors.grey;
+      case '!':  // Missing - отсутствующие файлы
+        return Colors.deepOrange;
+      case 'C':  // Conflicted - конфликтующие файлы
+        return Colors.purple;
+      case 'R':  // Replaced - замененные файлы
+        return Colors.teal;
+      case 'I':  // Ignored - игнорируемые файлы
+        return Colors.brown;
+      case 'X':  // External - внешние файлы
+        return Colors.indigo;
+      case '~':  // Obstructed - заблокированные файлы
+        return Colors.amber;
+      default:
+        return Colors.black87;
+    }
+  }
+
+  Color _getStatusTextColor(String status) {
+    switch (status) {
+      case 'M':  // Modified - измененные файлы
+        return const Color(0xFF1976D2); // blue.shade700
+      case 'A':  // Added - новые файлы
+        return const Color(0xFF388E3C); // green.shade700
+      case 'D':  // Deleted - удаленные файлы
+        return const Color(0xFFD32F2F); // red.shade700
+      case '?':  // Untracked - неотслеживаемые файлы
+        return const Color(0xFF616161); // grey.shade700
+      case '!':  // Missing - отсутствующие файлы
+        return const Color(0xFFE64A19); // deepOrange.shade700
+      case 'C':  // Conflicted - конфликтующие файлы
+        return const Color(0xFF7B1FA2); // purple.shade700
+      case 'R':  // Replaced - замененные файлы
+        return const Color(0xFF00796B); // teal.shade700
+      case 'I':  // Ignored - игнорируемые файлы
+        return const Color(0xFF5D4037); // brown.shade700
+      case 'X':  // External - внешние файлы
+        return const Color(0xFF303F9F); // indigo.shade700
+      case '~':  // Obstructed - заблокированные файлы
+        return const Color(0xFFFF8F00); // amber.shade700
+      default:
+        return const Color(0xFF212121); // black87
+    }
+  }
+
+  String _getStatusDescription(String status) {
     switch (status) {
       case 'M':
         return 'Изменен';
@@ -327,33 +418,202 @@ class _CommitScreenState extends State<CommitScreen> {
       case 'D':
         return 'Удален';
       case '?':
-        return 'Не отслеживается';
+        return 'Неотслеживаемый';
       case '!':
         return 'Отсутствует';
       case 'C':
         return 'Конфликт';
+      case 'R':
+        return 'Заменен';
+      case 'I':
+        return 'Игнорируется';
+      case 'X':
+        return 'Внешний';
+      case '~':
+        return 'Заблокирован';
       default:
-        return status;
+        return 'Неизвестно';
     }
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'M':
-        return Colors.orange;
-      case 'A':
-        return Colors.green;
-      case 'D':
-        return Colors.red;
-      case '?':
-        return Colors.grey;
-      case '!':
-        return Colors.red;
-      case 'C':
-        return Colors.purple;
-      default:
-        return Colors.black;
-    }
+  Widget _buildStatusLegendItem(String status, String description, Color color) {
+    final totalCount = _getFilesCountByStatus(status);
+    final selectedCount = _getSelectedFilesCountByStatus(status);
+    final isStatusSelected = _selectedStatuses.contains(status);
+    
+    if (totalCount == 0) return const SizedBox.shrink();
+    
+    return GestureDetector(
+      onTap: () {
+        _toggleFilesByStatus(status);
+        _toggleStatusSelection(status);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isStatusSelected ? color.withValues(alpha: 0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: isStatusSelected 
+              ? Border.all(color: color, width: 1)
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$status: $description',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: color == Colors.blue ? const Color(0xFF1976D2) :
+                      color == Colors.green ? const Color(0xFF388E3C) :
+                      color == Colors.red ? const Color(0xFFD32F2F) :
+                      color == Colors.grey ? const Color(0xFF616161) :
+                      color == Colors.deepOrange ? const Color(0xFFE64A19) :
+                      color == Colors.purple ? const Color(0xFF7B1FA2) :
+                      color == Colors.teal ? const Color(0xFF00796B) :
+                      color == Colors.brown ? const Color(0xFF5D4037) :
+                      color == Colors.indigo ? const Color(0xFF303F9F) :
+                      color == Colors.amber ? const Color(0xFFFF8F00) :
+                      const Color(0xFF212121),
+                fontSize: 11,
+                fontWeight: isStatusSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '($selectedCount/$totalCount)',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey.shade600,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showStatusLegend() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Цветовая схема статусов файлов'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDetailedStatusItem('M', 'Modified', 'Изменен', Colors.blue, 'Файл был изменен'),
+              _buildDetailedStatusItem('A', 'Added', 'Добавлен', Colors.green, 'Новый файл добавлен в репозиторий'),
+              _buildDetailedStatusItem('D', 'Deleted', 'Удален', Colors.red, 'Файл удален из репозитория'),
+              _buildDetailedStatusItem('?', 'Untracked', 'Неотслеживаемый', Colors.grey, 'Файл не отслеживается SVN'),
+              _buildDetailedStatusItem('!', 'Missing', 'Отсутствует', Colors.deepOrange, 'Файл отслеживается но отсутствует'),
+              _buildDetailedStatusItem('C', 'Conflicted', 'Конфликт', Colors.purple, 'Файл имеет конфликты слияния'),
+              _buildDetailedStatusItem('R', 'Replaced', 'Заменен', Colors.teal, 'Файл был заменен'),
+              _buildDetailedStatusItem('I', 'Ignored', 'Игнорируется', Colors.brown, 'Файл игнорируется SVN'),
+              _buildDetailedStatusItem('X', 'External', 'Внешний', Colors.indigo, 'Внешнее определение'),
+              _buildDetailedStatusItem('~', 'Obstructed', 'Заблокирован', Colors.amber, 'Ресурс заблокирован'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Закрыть'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailedStatusItem(String status, String statusEn, String statusRu, Color color, String description) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 20,
+            height: 20,
+            margin: const EdgeInsets.only(right: 12, top: 2),
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                status,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '$statusEn ($status)',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: color == Colors.blue ? const Color(0xFF1976D2) :
+                              color == Colors.green ? const Color(0xFF388E3C) :
+                              color == Colors.red ? const Color(0xFFD32F2F) :
+                              color == Colors.grey ? const Color(0xFF616161) :
+                              color == Colors.deepOrange ? const Color(0xFFE64A19) :
+                              color == Colors.purple ? const Color(0xFF7B1FA2) :
+                              color == Colors.teal ? const Color(0xFF00796B) :
+                              color == Colors.brown ? const Color(0xFF5D4037) :
+                              color == Colors.indigo ? const Color(0xFF303F9F) :
+                              color == Colors.amber ? const Color(0xFFFF8F00) :
+                              const Color(0xFF212121),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      statusRu,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: color == Colors.blue ? const Color(0xFF1976D2) :
+                              color == Colors.green ? const Color(0xFF388E3C) :
+                              color == Colors.red ? const Color(0xFFD32F2F) :
+                              color == Colors.grey ? const Color(0xFF616161) :
+                              color == Colors.deepOrange ? const Color(0xFFE64A19) :
+                              color == Colors.purple ? const Color(0xFF7B1FA2) :
+                              color == Colors.teal ? const Color(0xFF00796B) :
+                              color == Colors.brown ? const Color(0xFF5D4037) :
+                              color == Colors.indigo ? const Color(0xFF303F9F) :
+                              color == Colors.amber ? const Color(0xFFFF8F00) :
+                              const Color(0xFF212121),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -519,7 +779,87 @@ class _CommitScreenState extends State<CommitScreen> {
                         'Выбрано: ${_files.where((f) => f.isSelected).length}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
+                      IconButton(
+                        onPressed: _showStatusLegend,
+                        icon: const Icon(Icons.info_outline),
+                        tooltip: 'Цветовая схема статусов',
+                      ),
                     ],
+                  ),
+                  
+                  // Легенда статусов
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Статусы файлов:',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _selectedStatuses.clear();
+                                  for (final file in _files) {
+                                    file.isSelected = false;
+                                  }
+                                });
+                              },
+                              child: const Text('Снять все'),
+                            ),
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _selectedStatuses.clear();
+                                  for (final file in _files) {
+                                    file.isSelected = true;
+                                  }
+                                });
+                              },
+                              child: const Text('Выбрать все'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 4,
+                          children: [
+                            _buildStatusLegendItem('M', 'Изменен', Colors.blue),
+                            _buildStatusLegendItem('A', 'Добавлен', Colors.green),
+                            _buildStatusLegendItem('D', 'Удален', Colors.red),
+                            _buildStatusLegendItem('?', 'Неотслеживаемый', Colors.grey),
+                            _buildStatusLegendItem('!', 'Отсутствует', Colors.deepOrange),
+                            _buildStatusLegendItem('C', 'Конфликт', Colors.purple),
+                            _buildStatusLegendItem('R', 'Заменен', Colors.teal),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                   
                   const SizedBox(height: 8),
@@ -600,10 +940,16 @@ class _CommitScreenState extends State<CommitScreen> {
                                         ),
                                         const SizedBox(width: 8),
                                         Expanded(
-                                          child: ClickableText(
-                                            text: file.path,
-                                            style: Theme.of(context).textTheme.bodySmall,
-                                            enableLinkDetection: false, // Disable default link behavior
+                                          child: Tooltip(
+                                            message: '${_getStatusDescription(file.status)} (${file.status})',
+                                            child: ClickableText(
+                                              text: file.path,
+                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: _getStatusTextColor(file.status),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              enableLinkDetection: false, // Disable default link behavior
+                                            ),
                                           ),
                                         ),
                                       ],

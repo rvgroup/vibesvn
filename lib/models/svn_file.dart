@@ -1,7 +1,7 @@
 class SvnFile {
   final String path;
   final String status;
-  final bool isSelected;
+  bool isSelected;
 
   SvnFile({
     required this.path,
