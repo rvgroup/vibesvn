@@ -154,19 +154,23 @@ class _CommitScreenState extends State<CommitScreen> {
 
   void _selectAllFiles() {
     setState(() {
-      _files = _files.map((file) => file.copyWith(isSelected: true)).toList();
+      for (final file in _files) {
+        file.isSelected = true;
+      }
     });
   }
 
   void _deselectAllFiles() {
     setState(() {
-      _files = _files.map((file) => file.copyWith(isSelected: false)).toList();
+      for (final file in _files) {
+        file.isSelected = false;
+      }
     });
   }
 
   void _toggleFileSelection(int index) {
     setState(() {
-      _files[index] = _files[index].copyWith(isSelected: !_files[index].isSelected);
+      _files[index].isSelected = !_files[index].isSelected;
     });
   }
 
@@ -354,6 +358,166 @@ class _CommitScreenState extends State<CommitScreen> {
 
   int _getSelectedFilesCountByStatus(String status) {
     return _files.where((file) => file.status == status && file.isSelected).length;
+  }
+
+  List<SvnFile> _getRevertableFiles() {
+    // Файлы, которые можно восстановить: измененные (M), удаленные/отсутствующие (!), замененные (R)
+    return _files.where((file) =>
+        file.isSelected && 
+        (file.status == 'M' || file.status == '!' || file.status == 'R')
+    ).toList();
+  }
+
+  bool _hasRevertableFiles() {
+    return _getRevertableFiles().isNotEmpty;
+  }
+
+  Future<void> _revertSelectedFiles() async {
+    final revertableFiles = _getRevertableFiles();
+    
+    if (revertableFiles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Нет выбранных файлов для восстановления'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Показываем диалог подтверждения
+    final confirmed = await _showRevertConfirmationDialog(revertableFiles);
+    if (!confirmed) return;
+
+    setState(() {
+      _isCommitting = true; // Используем тот же индикатор загрузки
+    });
+
+    try {
+      final filePaths = revertableFiles.map((file) => file.path).toList();
+      
+      final revertResult = await SvnService.revert(
+        filePaths, 
+        workingDirectory: widget.repository.localPath,
+      );
+
+      if (revertResult.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Восстановлено файлов: ${filePaths.length}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Обновляем список файлов
+        await _loadData();
+      } else {
+        ErrorHelper.showSvnError(context, revertResult, 'Ошибка восстановления файлов');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка при восстановлении файлов: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isCommitting = false;
+      });
+    }
+  }
+
+  Future<bool> _showRevertConfirmationDialog(List<SvnFile> files) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Подтверждение восстановления'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Восстановить ${files.length} файл(ов)?'),
+              const SizedBox(height: 12),
+              Container(
+                height: 120,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: files.length,
+                  itemBuilder: (context, index) {
+                    final file = files[index];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(file.status),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                file.status,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 7,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              file.path,
+                              style: const TextStyle(fontSize: 11),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '⚠️ Все изменения будут утеряны!',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Восстановить'),
+          ),
+        ],
+      ),
+    );
+    
+    return result ?? false;
   }
 
   Color _getStatusColor(String status) {
@@ -960,6 +1124,45 @@ class _CommitScreenState extends State<CommitScreen> {
                             },
                           ),
                   ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Кнопка восстановления файлов
+                  if (_hasRevertableFiles())
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.restore, color: Colors.red.shade700, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Найдено файлов для восстановления: ${_getRevertableFiles().length}',
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: _isCommitting ? null : _revertSelectedFiles,
+                            icon: const Icon(Icons.restore_from_trash),
+                            label: const Text('Восстановить'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   
                   // Кнопки действий
                   const SizedBox(height: 16),

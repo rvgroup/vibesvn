@@ -315,13 +315,16 @@ class SvnService {
     }
   }
 
-  static Future<SvnResult> revert(String filePath) async {
+  static Future<SvnResult> revert(List<String> filePaths, {String? workingDirectory}) async {
     try {
-      final args = ['revert', filePath];
+      final args = ['revert', ...filePaths];
       
       print('DEBUG: SVN revert command: svn ${args.join(' ')}');
+      if (workingDirectory != null) {
+        print('DEBUG: Working directory: $workingDirectory');
+      }
       
-      final result = await Process.run('svn', args);
+      final result = await Process.run('svn', args, workingDirectory: workingDirectory);
       
       print('DEBUG: SVN revert exit code: ${result.exitCode}');
       print('DEBUG: SVN revert stdout: ${result.stdout}');
