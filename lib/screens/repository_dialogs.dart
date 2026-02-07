@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/repository.dart';
 import '../models/user_settings.dart';
@@ -101,12 +102,12 @@ class _CreateRepositoryDialogState extends State<CreateRepositoryDialog> {
         widget.onRepositoryCreated();
         Navigator.pop(context);
       } else {
-        ErrorHelper.showSvnError(context, checkoutResult, 'Ошибка при клонировании репозитория');
+        ErrorHelper.showSvnError(context, checkoutResult, 'Error cloning repository'.tr());
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка: $e'),
+          content: Text('Error: $e'.tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -124,7 +125,7 @@ class _CreateRepositoryDialogState extends State<CreateRepositoryDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Создать репозиторий'),
+      title: Text('Create Repository'.tr()),
       content: SizedBox(
         width: 500,
         child: Form(
@@ -134,14 +135,14 @@ class _CreateRepositoryDialogState extends State<CreateRepositoryDialog> {
             children: [
               TextFormField(
                 controller: _urlController,
-                decoration: const InputDecoration(
-                  labelText: 'URL репозитория',
-                  hintText: 'https://svn.example.com/repository',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: 'Repository URL'.tr(),
+                  hintText: 'https://svn.example.com/repository'.tr(),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Введите URL репозитория';
+                    return 'Enter repository URL'.tr();
                   }
                   return null;
                 },
@@ -149,13 +150,13 @@ class _CreateRepositoryDialogState extends State<CreateRepositoryDialog> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: 'Логин',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: 'Username'.tr(),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Введите логин';
+                    return 'Enter username'.tr();
                   }
                   return null;
                 },
@@ -164,8 +165,8 @@ class _CreateRepositoryDialogState extends State<CreateRepositoryDialog> {
               TextFormField(
                 controller: _passwordController,
                 decoration: InputDecoration(
-                  labelText: 'Пароль',
-                  border: OutlineInputBorder(),
+                  labelText: 'Password'.tr(),
+                  border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
                     onPressed: () {
@@ -178,7 +179,7 @@ class _CreateRepositoryDialogState extends State<CreateRepositoryDialog> {
                 obscureText: _obscurePassword,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Введите пароль';
+                    return 'Enter password'.tr();
                   }
                   return null;
                 },
@@ -188,13 +189,13 @@ class _CreateRepositoryDialogState extends State<CreateRepositoryDialog> {
                 children: [
                   Expanded(
                     child: Text(
-                      _selectedPath.isEmpty ? 'Выберите папку' : _selectedPath,
+                      _selectedPath.isEmpty ? 'Select folder'.tr() : _selectedPath,
                       style: const TextStyle(fontSize: 16),
                     ),
                   ),
                   ElevatedButton(
                     onPressed: _selectPath,
-                    child: const Text('Обзор...'),
+                    child: Text('Browse...'.tr()),
                   ),
                 ],
               ),
@@ -205,7 +206,7 @@ class _CreateRepositoryDialogState extends State<CreateRepositoryDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.pop(context),
-          child: const Text('Отмена'),
+          child: Text('Cancel'.tr()),
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _createRepository,
@@ -215,7 +216,7 @@ class _CreateRepositoryDialogState extends State<CreateRepositoryDialog> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Создать'),
+              : Text('Create'.tr()),
         ),
       ],
     );
@@ -274,8 +275,8 @@ class _OpenRepositoryDialogState extends State<OpenRepositoryDialog> {
         print('DEBUG: SVN is not available');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('SVN не установлен или недоступен'),
+            SnackBar(
+              content: Text('SVN is not installed or unavailable'.tr()),
               backgroundColor: Colors.red,
             ),
           );
@@ -324,8 +325,8 @@ class _OpenRepositoryDialogState extends State<OpenRepositoryDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_isValidRepository 
-                ? 'Действительный SVN репозиторий' 
-                : 'Не является SVN рабочей копией'),
+                ? 'Valid SVN repository'.tr() 
+                : 'Not an SVN working copy'.tr()),
             backgroundColor: _isValidRepository ? Colors.green : Colors.red,
           ),
         );
@@ -339,7 +340,7 @@ class _OpenRepositoryDialogState extends State<OpenRepositoryDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка проверки репозитория: $e'),
+            content: Text('Repository validation error: {error}'.tr().replaceAll('{error}', e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -374,7 +375,7 @@ class _OpenRepositoryDialogState extends State<OpenRepositoryDialog> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка: $e'),
+          content: Text('Error: $e'.tr()),
           backgroundColor: Colors.red,
         ),
       );
@@ -384,7 +385,7 @@ class _OpenRepositoryDialogState extends State<OpenRepositoryDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Открыть локальный репозиторий'),
+      title: Text('Open Local Repository'.tr()),
       content: SizedBox(
         width: 500,
         child: Column(
@@ -394,13 +395,13 @@ class _OpenRepositoryDialogState extends State<OpenRepositoryDialog> {
               children: [
                 Expanded(
                   child: Text(
-                    _selectedPath.isEmpty ? 'Выберите папку с SVN репозиторием' : _selectedPath,
+                    _selectedPath.isEmpty ? 'Select folder with SVN repository'.tr() : _selectedPath,
                     style: const TextStyle(fontSize: 16),
                   ),
                 ),
                 ElevatedButton(
                   onPressed: _selectPath,
-                  child: const Text('Обзор...'),
+                  child: Text('Browse...'.tr()),
                 ),
               ],
             ),
@@ -421,8 +422,8 @@ class _OpenRepositoryDialogState extends State<OpenRepositoryDialog> {
                     const SizedBox(width: 8),
                     Text(
                       _isValidRepository
-                          ? 'Действительный SVN репозиторий'
-                          : 'Не является SVN рабочей копией',
+                          ? 'Valid SVN repository'.tr()
+                          : 'Not an SVN working copy'.tr(),
                       style: TextStyle(
                         color: _isValidRepository ? Colors.green : Colors.red,
                       ),
@@ -436,11 +437,11 @@ class _OpenRepositoryDialogState extends State<OpenRepositoryDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Отмена'),
+          child: Text('Cancel'.tr()),
         ),
         ElevatedButton(
           onPressed: _isValidRepository ? _openRepository : null,
-          child: const Text('Открыть'),
+          child: Text('Open'.tr()),
         ),
       ],
     );
@@ -495,7 +496,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Настройки пользователя'),
+      title: Text('User Settings'.tr()),
       content: SizedBox(
         width: 500,
         child: Column(
@@ -503,16 +504,16 @@ class _SettingsDialogState extends State<SettingsDialog> {
           children: [
             TextFormField(
               controller: _usernameController,
-              decoration: const InputDecoration(
-                labelText: 'Логин по умолчанию',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'Default Username'.tr(),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _passwordController,
               decoration: InputDecoration(
-                labelText: 'Пароль по умолчанию',
+                labelText: 'Default Password'.tr(),
                 border: OutlineInputBorder(),
                 suffixIcon: IconButton(
                   icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
@@ -528,9 +529,9 @@ class _SettingsDialogState extends State<SettingsDialog> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _defaultPathController,
-              decoration: const InputDecoration(
-                labelText: 'Папка для клонирования по умолчанию',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'Default clone folder'.tr(),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
@@ -544,13 +545,13 @@ class _SettingsDialogState extends State<SettingsDialog> {
                     });
                   },
                 ),
-                const Text('Сохранять учетные данные'),
+                Text('Save credentials'.tr()),
               ],
             ),
             const SizedBox(height: 16),
             Row(
               children: [
-                const Text('Лимит истории коммитов: '),
+                Text('Commit history limit: '.tr()),
                 const SizedBox(width: 8),
                 SizedBox(
                   width: 60,
@@ -573,11 +574,11 @@ class _SettingsDialogState extends State<SettingsDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Отмена'),
+          child: Text('Cancel'.tr()),
         ),
         ElevatedButton(
           onPressed: _saveSettings,
-          child: const Text('Сохранить'),
+          child: Text('Save'.tr()),
         ),
       ],
     );

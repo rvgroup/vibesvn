@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/locale_service.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../services/storage_service.dart';
+import '../services/theme_service.dart';
 import '../models/user_settings.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -11,7 +12,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final LocaleService _localeService = LocaleService();
+  final ThemeService _themeService = ThemeService();
   UserSettings? _settings;
 
   @override
@@ -31,7 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('settings_screen.title'.tr(context)),
+        title: Text('Settings'.tr()),
       ),
       body: _settings == null
           ? const Center(child: CircularProgressIndicator())
@@ -46,58 +47,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'settings_screen.general'.tr(context),
+                          'General'.tr(),
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        
+
                         // Language Selection
                         ListTile(
                           leading: const Icon(Icons.language),
-                          title: Text('settings_screen.language'.tr(context)),
-                          subtitle: Text(
-                            LocaleService.localeNames[_localeService.getCurrentLocaleCode()] ?? 'Unknown',
-                          ),
+                          title: Text('Language'.tr()),
+                          subtitle: Text(context.locale.languageCode == 'en' ? 'English' : 'Русский'),
                           trailing: DropdownButton<String>(
-                            value: _localeService.getCurrentLocaleCode(),
-                            items: LocaleService.supportedLocales.map((locale) {
-                              return DropdownMenuItem<String>(
-                                value: locale.languageCode,
-                                child: Text(LocaleService.localeNames[locale.languageCode] ?? locale.languageCode),
-                              );
-                            }).toList(),
+                            value: context.locale.languageCode,
+                            items: const [
+                              DropdownMenuItem(value: 'en', child: Text('English')),
+                              DropdownMenuItem(value: 'ru', child: Text('Русский')),
+                            ],
                             onChanged: (String? newValue) {
                               if (newValue != null) {
-                                _localeService.setLocale(newValue);
+                                context.setLocale(Locale(newValue));
                               }
                             },
                           ),
                         ),
-                        
+
                         const Divider(),
-                        
+
                         // Theme Selection
                         ListTile(
                           leading: const Icon(Icons.palette),
-                          title: Text('settings_screen.theme'.tr(context)),
-                          subtitle: Text(_settings?.themeMode == 'dark' 
-                            ? 'Dark' 
-                            : _settings?.themeMode == 'light' 
-                              ? 'Light' 
-                              : 'System'),
-                          trailing: DropdownButton<String>(
-                            value: _settings?.themeMode ?? 'system',
-                            items: const [
-                              DropdownMenuItem(value: 'system', child: Text('System')),
-                              DropdownMenuItem(value: 'light', child: Text('Light')),
-                              DropdownMenuItem(value: 'dark', child: Text('Dark')),
-                            ],
-                            onChanged: (String? newValue) {
-                              if (newValue != null && _settings != null) {
-                                final updatedSettings = _settings!.copyWith(themeMode: newValue);
-                                StorageService.saveUserSettings(updatedSettings);
+                          title: Text('Theme'.tr()),
+                          subtitle: Text(_settings?.appTheme.name
+                            ?? 'System'),
+                          trailing: DropdownButton<AppTheme>(
+                            value: _settings?.appTheme ?? AppTheme.system,
+                            items: AppTheme.values.map((theme) {
+                              return DropdownMenuItem<AppTheme>(
+                                value: theme,
+                                child: Text(theme.name),
+                              );
+                            }).toList(),
+                            onChanged: (AppTheme? newValue) {
+                              if (newValue != null) {
+                                _themeService.setTheme(newValue);
                                 _loadSettings();
                               }
                             },
@@ -107,9 +101,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // About Section
                 Card(
                   child: Padding(
@@ -118,7 +112,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'settings_screen.about'.tr(context),
+                          'About'.tr(),
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),

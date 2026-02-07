@@ -1,13 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../models/repository.dart';
 import '../models/svn_file.dart';
-import '../models/svn_result.dart';
-import '../models/user_settings.dart';
 import '../services/storage_service.dart';
 import '../services/svn_service.dart';
 import '../services/commit_template_service.dart';
-import '../services/locale_service.dart';
 import '../helpers/error_helper.dart';
 import '../helpers/link_helper.dart';
 import '../widgets/clickable_text.dart';
@@ -67,7 +65,7 @@ class _CommitScreenState extends State<CommitScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка загрузки данных: $e'),
+            content: Text('Error loading data: {error}'.tr().replaceAll('{error}', e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -181,7 +179,7 @@ class _CommitScreenState extends State<CommitScreen> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            const Text('История коммитов'),
+            Text('Commit History'.tr()),
             const Spacer(),
             if (_isLoadingHistory)
               const SizedBox(
@@ -193,7 +191,7 @@ class _CommitScreenState extends State<CommitScreen> {
               IconButton(
                 icon: const Icon(Icons.refresh),
                 onPressed: _loadRecentCommitMessages,
-                tooltip: 'Обновить',
+                tooltip: 'Refresh'.tr(),
               ),
           ],
         ),
@@ -201,8 +199,8 @@ class _CommitScreenState extends State<CommitScreen> {
           width: 600,
           height: 400,
           child: _recentCommitMessages.isEmpty
-              ? const Center(
-                  child: Text('Нет истории коммитов'),
+              ? Center(
+                  child: Text('No commit history'.tr()),
                 )
               : ListView.builder(
                   itemCount: _recentCommitMessages.length,
@@ -214,14 +212,14 @@ class _CommitScreenState extends State<CommitScreen> {
                             ? '${message.substring(0, 100)}...'
                             : message,
                       ),
-                      subtitle: Text('Коммит #${index + 1}'),
+                      subtitle: Text('Commit #{number}'.tr().replaceAll('{number}', (index + 1).toString())),
                       trailing: IconButton(
                         icon: const Icon(Icons.copy),
                         onPressed: () {
                           _messageController.text = message;
                           Navigator.pop(context);
                         },
-                        tooltip: 'Использовать это сообщение',
+                        tooltip: 'Use this message'.tr(),
                       ),
                       onTap: () {
                         _messageController.text = message;
@@ -234,7 +232,7 @@ class _CommitScreenState extends State<CommitScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Закрыть'),
+            child: Text('Close'.tr()),
           ),
         ],
       ),
@@ -246,8 +244,8 @@ class _CommitScreenState extends State<CommitScreen> {
     
     if (selectedFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Выберите хотя бы один файл для коммита'),
+        SnackBar(
+          content: Text('Select at least one file to commit'.tr()),
           backgroundColor: Colors.orange,
         ),
       );
@@ -256,8 +254,8 @@ class _CommitScreenState extends State<CommitScreen> {
 
     if (_messageController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Введите сообщение коммита'),
+        SnackBar(
+          content: Text('Enter commit message'.tr()),
           backgroundColor: Colors.orange,
         ),
       );
@@ -277,7 +275,7 @@ class _CommitScreenState extends State<CommitScreen> {
           // Используем workingDirectory для выполнения команды в папке репозитория
           final addResult = await SvnService.add(file.path, workingDirectory: widget.repository.localPath);
           if (!addResult.success) {
-            ErrorHelper.showSvnError(context, addResult, 'Ошибка добавления файла ${file.path}');
+            ErrorHelper.showSvnError(context, addResult, 'Error adding file {path}'.tr().replaceAll('{path}', file.path));
             return;
           }
         }
@@ -306,15 +304,15 @@ class _CommitScreenState extends State<CommitScreen> {
         final revisionText = commitResult.output?.split(' ').last ?? '';
         final cleanRevision = revisionText.replaceAll(RegExp(r'\s+'), '');
         
-        ErrorHelper.showSuccess(context, 'Коммит успешно выполнен (ревизия $cleanRevision)');
+        ErrorHelper.showSuccess(context, 'Commit successful (revision {revision})'.tr().replaceAll('{revision}', cleanRevision));
         Navigator.pop(context);
       } else {
-        ErrorHelper.showSvnError(context, commitResult, 'Ошибка при выполнении коммита');
+        ErrorHelper.showSvnError(context, commitResult, 'Error during commit'.tr());
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка: $e'),
+          content: Text('Error: {error}'.tr().replaceAll('{error}', e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -379,7 +377,7 @@ class _CommitScreenState extends State<CommitScreen> {
     if (revertableFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('commit_screen.revert.no_files_message'.tr(context)),
+          content: Text('revertNoFilesMessage'.tr()),
           backgroundColor: Colors.orange,
         ),
       );
@@ -405,7 +403,7 @@ class _CommitScreenState extends State<CommitScreen> {
       if (revertResult.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('commit_screen.revert.success_message'.tr(context).replaceAll('{count}', '${filePaths.length}')),
+            content: Text('Reverted files: {count}'.tr().replaceAll('{count}', '${filePaths.length}')),
             backgroundColor: Colors.green,
           ),
         );
@@ -413,12 +411,12 @@ class _CommitScreenState extends State<CommitScreen> {
         // Обновляем список файлов
         await _loadData();
       } else {
-        ErrorHelper.showSvnError(context, revertResult, 'commit_screen.revert.error_title'.tr(context));
+        ErrorHelper.showSvnError(context, revertResult, 'Revert failed'.tr());
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка при восстановлении файлов: $e'),
+          content: Text('Error reverting files: {error}'.tr().replaceAll('{error}', e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -433,14 +431,14 @@ class _CommitScreenState extends State<CommitScreen> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('commit_screen.revert.title'.tr(context)),
+        title: Text('Revert'.tr()),
         content: SizedBox(
           width: double.maxFinite,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('commit_screen.revert.confirm_message'.tr(context).replaceAll('{count}', '${files.length}')),
+              Text('Are you sure you want to revert {count} files?'.tr().replaceAll('{count}', '${files.length}')),
               const SizedBox(height: 12),
               Container(
                 height: 120,
@@ -491,7 +489,7 @@ class _CommitScreenState extends State<CommitScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'commit_screen.revert.warning'.tr(context),
+                'All changes will be lost!'.tr(),
                 style: const TextStyle(
                   color: Colors.red,
                   fontWeight: FontWeight.bold,
@@ -504,7 +502,7 @@ class _CommitScreenState extends State<CommitScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('common.cancel'.tr(context)),
+            child: Text('Cancel'.tr()),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -512,7 +510,7 @@ class _CommitScreenState extends State<CommitScreen> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: Text('commit_screen.revert.button'.tr(context)),
+            child: Text('Revert'.tr()),
           ),
         ],
       ),
@@ -578,27 +576,27 @@ class _CommitScreenState extends State<CommitScreen> {
   String _getStatusDescription(String status) {
     switch (status) {
       case 'M':
-        return 'Изменен';
+        return 'Modified'.tr();
       case 'A':
-        return 'Добавлен';
+        return 'Added'.tr();
       case 'D':
-        return 'Удален';
+        return 'Deleted'.tr();
       case '?':
-        return 'Неотслеживаемый';
+        return 'Untracked'.tr();
       case '!':
-        return 'Отсутствует';
+        return 'Missing'.tr();
       case 'C':
-        return 'Конфликт';
+        return 'Conflicted'.tr();
       case 'R':
-        return 'Заменен';
+        return 'Replaced'.tr();
       case 'I':
-        return 'Игнорируется';
+        return 'Ignored'.tr();
       case 'X':
-        return 'Внешний';
+        return 'External'.tr();
       case '~':
-        return 'Заблокирован';
+        return 'Obstructed'.tr();
       default:
-        return 'Неизвестно';
+        return 'Unknown'.tr();
     }
   }
 
@@ -671,29 +669,29 @@ class _CommitScreenState extends State<CommitScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Цветовая схема статусов файлов'),
+        title: Text('File Status Color Scheme'.tr()),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetailedStatusItem('M', 'Modified', 'Изменен', Colors.blue, 'Файл был изменен'),
-              _buildDetailedStatusItem('A', 'Added', 'Добавлен', Colors.green, 'Новый файл добавлен в репозиторий'),
-              _buildDetailedStatusItem('D', 'Deleted', 'Удален', Colors.red, 'Файл удален из репозитория'),
-              _buildDetailedStatusItem('?', 'Untracked', 'Неотслеживаемый', Colors.grey, 'Файл не отслеживается SVN'),
-              _buildDetailedStatusItem('!', 'Missing', 'Отсутствует', Colors.deepOrange, 'Файл отслеживается но отсутствует'),
-              _buildDetailedStatusItem('C', 'Conflicted', 'Конфликт', Colors.purple, 'Файл имеет конфликты слияния'),
-              _buildDetailedStatusItem('R', 'Replaced', 'Заменен', Colors.teal, 'Файл был заменен'),
-              _buildDetailedStatusItem('I', 'Ignored', 'Игнорируется', Colors.brown, 'Файл игнорируется SVN'),
-              _buildDetailedStatusItem('X', 'External', 'Внешний', Colors.indigo, 'Внешнее определение'),
-              _buildDetailedStatusItem('~', 'Obstructed', 'Заблокирован', Colors.amber, 'Ресурс заблокирован'),
+              _buildDetailedStatusItem('M', 'Modified', 'Modified'.tr(), Colors.blue, 'File was modified'.tr()),
+              _buildDetailedStatusItem('A', 'Added', 'Added'.tr(), Colors.green, 'New file added to repository'.tr()),
+              _buildDetailedStatusItem('D', 'Deleted', 'Deleted'.tr(), Colors.red, 'File deleted from repository'.tr()),
+              _buildDetailedStatusItem('?', 'Untracked', 'Untracked'.tr(), Colors.grey, 'File not tracked by SVN'.tr()),
+              _buildDetailedStatusItem('!', 'Missing', 'Missing'.tr(), Colors.deepOrange, 'File tracked but missing'.tr()),
+              _buildDetailedStatusItem('C', 'Conflicted', 'Conflicted'.tr(), Colors.purple, 'File has merge conflicts'.tr()),
+              _buildDetailedStatusItem('R', 'Replaced', 'Replaced'.tr(), Colors.teal, 'File was replaced'.tr()),
+              _buildDetailedStatusItem('I', 'Ignored', 'Ignored'.tr(), Colors.brown, 'File ignored by SVN'.tr()),
+              _buildDetailedStatusItem('X', 'External', 'External'.tr(), Colors.indigo, 'External definition'.tr()),
+              _buildDetailedStatusItem('~', 'Obstructed', 'Obstructed'.tr(), Colors.amber, 'Resource obstructed'.tr()),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Закрыть'),
+            child: Text('Close'.tr()),
           ),
         ],
       ),
@@ -789,7 +787,7 @@ class _CommitScreenState extends State<CommitScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Коммит'),
+            Text('Commit'.tr()),
             ClickableText(
               text: widget.repository.name,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -821,7 +819,7 @@ class _CommitScreenState extends State<CommitScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Commit to:',
+                          'Commit to:'.tr(),
                           style: Theme.of(context).textTheme.labelMedium,
                         ),
                         const SizedBox(height: 4),
@@ -836,7 +834,7 @@ class _CommitScreenState extends State<CommitScreen> {
                   
                   // Сообщение коммита
                   Text(
-                    'Сообщение коммита:',
+                    'Commit message:'.tr(),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
@@ -846,9 +844,9 @@ class _CommitScreenState extends State<CommitScreen> {
                         child: TextFormField(
                           controller: _messageController,
                           maxLines: 3,
-                          decoration: const InputDecoration(
-                            hintText: 'Введите описание изменений...',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            hintText: 'Enter description of changes...'.tr(),
+                            border: const OutlineInputBorder(),
                           ),
                         ),
                       ),
@@ -856,12 +854,12 @@ class _CommitScreenState extends State<CommitScreen> {
                       IconButton(
                         onPressed: _showCommitHistoryDialog,
                         icon: const Icon(Icons.history),
-                        tooltip: 'История коммитов',
+                        tooltip: 'Commit History'.tr(),
                       ),
                       IconButton(
                         onPressed: _loadRecentCommitMessages,
                         icon: const Icon(Icons.refresh),
-                        tooltip: 'Обновить историю',
+                        tooltip: 'Refresh History'.tr(),
                       ),
                     ],
                   ),
@@ -898,7 +896,7 @@ class _CommitScreenState extends State<CommitScreen> {
                   if (_commitTemplates.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(
-                      'Шаблоны:',
+                      'Templates:'.tr(),
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                     const SizedBox(height: 4),
@@ -934,21 +932,21 @@ class _CommitScreenState extends State<CommitScreen> {
                     children: [
                       TextButton(
                         onPressed: _selectAllFiles,
-                        child: Text('commit_screen.select_all'.tr(context)),
+                        child: Text('Select All'.tr()),
                       ),
                       TextButton(
                         onPressed: _deselectAllFiles,
-                        child: Text('commit_screen.deselect_all'.tr(context)),
+                        child: Text('Deselect All'.tr()),
                       ),
                       const Spacer(),
                       Text(
-                        'Выбрано: ${_files.where((f) => f.isSelected).length}',
+                        'Selected: {count}'.tr().replaceAll('{count}', _files.where((f) => f.isSelected).length.toString()),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       IconButton(
                         onPressed: _showStatusLegend,
                         icon: const Icon(Icons.info_outline),
-                        tooltip: 'Цветовая схема статусов',
+                        tooltip: 'File Status Color Scheme'.tr(),
                       ),
                     ],
                   ),
@@ -970,7 +968,7 @@ class _CommitScreenState extends State<CommitScreen> {
                         Row(
                           children: [
                             Text(
-                              'Статусы файлов:',
+                              'File Statuses:'.tr(),
                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -990,7 +988,7 @@ class _CommitScreenState extends State<CommitScreen> {
                                   }
                                 });
                               },
-                              child: Text('commit_screen.deselect_all'.tr(context)),
+                              child: Text('Deselect All'.tr()),
                             ),
                             TextButton(
                               style: TextButton.styleFrom(
@@ -1006,7 +1004,7 @@ class _CommitScreenState extends State<CommitScreen> {
                                   }
                                 });
                               },
-                              child: Text('commit_screen.select_all'.tr(context)),
+                              child: Text('Select All'.tr()),
                             ),
                           ],
                         ),
@@ -1015,13 +1013,13 @@ class _CommitScreenState extends State<CommitScreen> {
                           spacing: 12,
                           runSpacing: 4,
                           children: [
-                            _buildStatusLegendItem('M', 'Изменен', Colors.blue),
-                            _buildStatusLegendItem('A', 'Добавлен', Colors.green),
-                            _buildStatusLegendItem('D', 'Удален', Colors.red),
-                            _buildStatusLegendItem('?', 'Неотслеживаемый', Colors.grey),
-                            _buildStatusLegendItem('!', 'Отсутствует', Colors.deepOrange),
-                            _buildStatusLegendItem('C', 'Конфликт', Colors.purple),
-                            _buildStatusLegendItem('R', 'Заменен', Colors.teal),
+                            _buildStatusLegendItem('M', 'Modified'.tr(), Colors.blue),
+                            _buildStatusLegendItem('A', 'Added'.tr(), Colors.green),
+                            _buildStatusLegendItem('D', 'Deleted'.tr(), Colors.red),
+                            _buildStatusLegendItem('?', 'Untracked'.tr(), Colors.grey),
+                            _buildStatusLegendItem('!', 'Missing'.tr(), Colors.deepOrange),
+                            _buildStatusLegendItem('C', 'Conflicted'.tr(), Colors.purple),
+                            _buildStatusLegendItem('R', 'Replaced'.tr(), Colors.teal),
                           ],
                         ),
                       ],
@@ -1035,7 +1033,7 @@ class _CommitScreenState extends State<CommitScreen> {
                     child: _files.isEmpty
                         ? Center(
                             child: Text(
-                              'commit_screen.no_files'.tr(context),
+                              'No files'.tr(),
                               style: const TextStyle(color: Colors.grey),
                             ),
                           )
@@ -1069,7 +1067,7 @@ class _CommitScreenState extends State<CommitScreen> {
                                       // Show message for non-modified files
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
-                                          content: Text('Файл "${file.path}" не имеет изменений для просмотра'),
+                                          content: Text('File \"{path}\" has no changes to view'.tr().replaceAll('{path}', file.path)),
                                           duration: const Duration(seconds: 2),
                                         ),
                                       );
@@ -1144,7 +1142,7 @@ class _CommitScreenState extends State<CommitScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Найдено файлов для восстановления: ${_getRevertableFiles().length}',
+                              'Files found for revert: {count}'.tr().replaceAll('{count}', _getRevertableFiles().length.toString()),
                               style: TextStyle(
                                 color: Colors.red.shade700,
                                 fontWeight: FontWeight.w500,
@@ -1154,7 +1152,7 @@ class _CommitScreenState extends State<CommitScreen> {
                           ElevatedButton.icon(
                             onPressed: _isCommitting ? null : _revertSelectedFiles,
                             icon: const Icon(Icons.restore_from_trash),
-                            label: Text('commit_screen.revert.button'.tr(context)),
+                            label: Text('Revert'.tr()),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red,
                               foregroundColor: Colors.white,
@@ -1172,7 +1170,7 @@ class _CommitScreenState extends State<CommitScreen> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: _isCommitting ? null : () => Navigator.pop(context),
-                          child: Text('common.cancel'.tr(context)),
+                          child: Text('Cancel'.tr()),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -1185,7 +1183,7 @@ class _CommitScreenState extends State<CommitScreen> {
                                   height: 16,
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : Text('commit_screen.commit_button'.tr(context)),
+                              : Text('Commit'.tr()),
                         ),
                       ),
                     ],
@@ -1221,7 +1219,7 @@ class _CommitScreenState extends State<CommitScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка при открытии diff: $e'),
+            content: Text('Error opening diff: {error}'.tr().replaceAll('{error}', e.toString())),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
@@ -1330,7 +1328,7 @@ class _CommitScreenState extends State<CommitScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Не удалось получить изменения для файла: $filePath'),
+              content: Text('Failed to get changes for file: {filePath}'.tr().replaceAll('{filePath}', filePath)),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 3),
             ),
@@ -1342,7 +1340,7 @@ class _CommitScreenState extends State<CommitScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ошибка при открытии diff: $e'),
+            content: Text('Error opening diff: {error}'.tr().replaceAll('{error}', e.toString())),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
@@ -1365,7 +1363,7 @@ class _CommitScreenState extends State<CommitScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      'Изменения в файле: $filePath',
+                      'Changes in file: {filePath}'.tr().replaceAll('{filePath}', filePath),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -1403,7 +1401,7 @@ class _CommitScreenState extends State<CommitScreen> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Закрыть'),
+                    child: Text('Close'.tr()),
                   ),
                 ],
               ),

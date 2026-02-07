@@ -34,6 +34,12 @@ class ThemeService extends ChangeNotifier {
 
   Future<void> setTheme(AppTheme theme) async {
     _theme = theme;
+    
+    // Save to UserSettings
+    final settings = await StorageService.getUserSettings();
+    final updatedSettings = settings.copyWith(appTheme: theme);
+    await StorageService.saveUserSettings(updatedSettings);
+    
     notifyListeners();
   }
 

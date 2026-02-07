@@ -74,12 +74,13 @@ class LocaleService extends ChangeNotifier {
   // Convenience method for shorter syntax
   String t(String key) => translate(key);
 
+
   String getCurrentLocaleCode() => _currentLocale.languageCode;
   
   bool isCurrentLocale(String localeCode) => _currentLocale.languageCode == localeCode;
 }
 
-// Extension for easy access to translations
+// Extension for backward compatibility
 extension Translations on String {
   String tr(BuildContext context) {
     return LocaleService().t(this);

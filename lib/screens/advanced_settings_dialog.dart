@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/user_settings.dart';
 import '../services/storage_service.dart';
-import '../services/theme_service.dart';
 import '../services/ignore_service.dart';
 import '../services/commit_template_service.dart';
 
@@ -15,7 +15,6 @@ class AdvancedSettingsDialog extends StatefulWidget {
 
 class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
   late UserSettings _settings;
-  late ThemeService _themeService;
   
   final _defaultPathController = TextEditingController();
   final _diffToolController = TextEditingController();
@@ -31,7 +30,6 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
   bool _autoSaveCredentials = true;
   bool _proxyEnabled = false;
   int _commitHistoryLimit = 50;
-  AppTheme _selectedTheme = AppTheme.system;
   bool _obscureDefaultPassword = true;
   bool _obscureProxyPassword = true;
   
@@ -48,7 +46,6 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
   @override
   void initState() {
     super.initState();
-    _themeService = ThemeService();
     _loadSettings();
   }
 
@@ -72,7 +69,6 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
           _autoSaveCredentials = settings.autoSaveCredentials;
           _commitHistoryLimit = settings.commitMessageHistoryLimit;
           _commitHistoryLimitController.text = _commitHistoryLimit.toString();
-          _selectedTheme = settings.appTheme;
           
           if (settings.proxySettings != null) {
             _proxyEnabled = settings.proxySettings!.enabled;
@@ -86,7 +82,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка загрузки настроек: $e')),
+          SnackBar(content: Text('Error loading settings: {error}'.tr().replaceAll('{error}', e.toString()))),
         );
       }
     }
@@ -105,7 +101,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Выберите инструмент сравнения'),
+        title: Text('Select comparison tool'.tr()),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: _diffTools.entries.map((entry) {
@@ -119,7 +115,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Отмена'),
+            child: Text('Cancel'.tr()),
           ),
         ],
       ),
@@ -174,14 +170,12 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
         autoUpdateRepositories: _autoUpdateRepositories,
         autoSaveCredentials: _autoSaveCredentials,
         commitMessageHistoryLimit: int.tryParse(_commitHistoryLimitController.text) ?? 50,
-        appTheme: _selectedTheme,
         proxySettings: proxySettings,
       );
 
       print('DEBUG: Updated settings externalDiffTool: "${updatedSettings.externalDiffTool}"');
       
       await StorageService.saveUserSettings(updatedSettings);
-      await _themeService.setTheme(_selectedTheme);
       
       print('DEBUG: Settings saved successfully!');
       
@@ -191,7 +185,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка сохранения настроек: $e')),
+          SnackBar(content: Text('Error saving settings: {error}'.tr().replaceAll('{error}', e.toString()))),
         );
       }
     }
@@ -200,7 +194,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Расширенные настройки'),
+      title: Text('Advanced Settings'.tr()),
       content: SizedBox(
         width: 600,
         height: 500,
@@ -208,22 +202,22 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionTitle('Общие настройки'),
+              _buildSectionTitle('General Settings'.tr()),
               Row(
                 children: [
                   Expanded(
                     child: TextFormField(
                       controller: _defaultPathController,
-                      decoration: const InputDecoration(
-                        labelText: 'Папка для клонирования по умолчанию',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: 'Default clone folder'.tr(),
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: _selectDefaultPath,
-                    child: const Text('Обзор'),
+                    child: Text('Browse'.tr()),
                   ),
                 ],
               ),
@@ -233,10 +227,10 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
                   Expanded(
                     child: TextFormField(
                       controller: _diffToolController,
-                      decoration: const InputDecoration(
-                        labelText: 'Внешний инструмент для сравнения',
-                        hintText: 'например: /usr/bin/bcompare',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: 'External diff tool'.tr(),
+                        hintText: 'e.g.: /usr/bin/bcompare'.tr(),
+                        border: const OutlineInputBorder(),
                       ),
                       onChanged: (value) {
                         _diffToolValue = value;
@@ -248,7 +242,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
                   ElevatedButton.icon(
                     onPressed: _selectDiffTool,
                     icon: const Icon(Icons.list),
-                    label: const Text('Выбрать'),
+                    label: Text('Select'.tr()),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
@@ -258,7 +252,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
                   ElevatedButton.icon(
                     onPressed: _browseDiffTool,
                     icon: const Icon(Icons.folder_open),
-                    label: const Text('Обзор'),
+                    label: Text('Browse'.tr()),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey,
                       foregroundColor: Colors.white,
@@ -273,7 +267,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
                     value: _autoSaveCredentials,
                     onChanged: (value) => setState(() => _autoSaveCredentials = value ?? true),
                   ),
-                  const Text('Сохранять учетные данные'),
+                  Text('Save credentials'.tr()),
                 ],
               ),
               const SizedBox(height: 16),
@@ -283,13 +277,13 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
                     value: _autoUpdateRepositories,
                     onChanged: (value) => setState(() => _autoUpdateRepositories = value ?? false),
                   ),
-                  const Text('Автоматически обновлять репозитории'),
+                  Text('Auto update repositories'.tr()),
                 ],
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  const Text('Лимит истории коммитов: '),
+                  Text('Commit history limit: '.tr()),
                   const SizedBox(width: 8),
                   SizedBox(
                     width: 100,
@@ -305,46 +299,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
               ),
               
               const SizedBox(height: 24),
-              _buildSectionTitle('Тема приложения'),
-              Row(
-                children: [
-                  Radio<AppTheme>(
-                    value: AppTheme.light,
-                    groupValue: _selectedTheme,
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _selectedTheme = value);
-                      }
-                    },
-                  ),
-                  const Text('Светлая'),
-                  const SizedBox(width: 16),
-                  Radio<AppTheme>(
-                    value: AppTheme.dark,
-                    groupValue: _selectedTheme,
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _selectedTheme = value);
-                      }
-                    },
-                  ),
-                  const Text('Темная'),
-                  const SizedBox(width: 16),
-                  Radio<AppTheme>(
-                    value: AppTheme.system,
-                    groupValue: _selectedTheme,
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _selectedTheme = value);
-                      }
-                    },
-                  ),
-                  const Text('Системная'),
-                ],
-              ),
-              
-              const SizedBox(height: 24),
-              _buildSectionTitle('Игнорируемые файлы'),
+              _buildSectionTitle('Ignored Files'.tr()),
               TextButton(
                 onPressed: () {
                   setState(() {
@@ -352,7 +307,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
                     _ignoredPatterns = _ignoredPatterns.toSet().toList();
                   });
                 },
-                child: const Text('Добавить общие паттерны'),
+                child: Text('Add common patterns'.tr()),
               ),
               const SizedBox(height: 8),
               SizedBox(
@@ -379,17 +334,17 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _proxyUsernameController,
-                decoration: const InputDecoration(
-                  labelText: 'Имя пользователя прокси',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: 'Proxy username'.tr(),
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _proxyPasswordController,
                 decoration: InputDecoration(
-                  labelText: 'Пароль прокси',
-                  border: OutlineInputBorder(),
+                  labelText: 'Proxy password'.tr(),
+                  border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(_obscureProxyPassword ? Icons.visibility_off : Icons.visibility),
                     onPressed: () {
@@ -403,7 +358,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
               ),
               
               const SizedBox(height: 24),
-              _buildSectionTitle('Шаблоны коммитов'),
+              _buildSectionTitle('Commit Templates'.tr()),
               TextButton(
                 onPressed: () {
                   setState(() {
@@ -411,7 +366,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
                     _commitTemplates = _commitTemplates.toSet().toList();
                   });
                 },
-                child: const Text('Добавить расширенные шаблоны'),
+                child: Text('Add advanced templates'.tr()),
               ),
               const SizedBox(height: 8),
               SizedBox(
@@ -441,11 +396,11 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Отмена'),
+          child: Text('Cancel'.tr()),
         ),
         ElevatedButton(
           onPressed: _saveSettings,
-          child: const Text('Сохранить'),
+          child: Text('Save'.tr()),
         ),
       ],
     );

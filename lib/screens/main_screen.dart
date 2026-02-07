@@ -1,11 +1,13 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../models/repository.dart';
 import '../services/storage_service.dart';
 import '../services/svn_service.dart';
+import '../services/window_service.dart';
 import 'repository_dialogs.dart';
 import 'commit_screen.dart';
 import 'advanced_settings_dialog.dart';
-import '../services/window_service.dart';
+import 'settings_screen.dart';
 import '../helpers/link_helper.dart';
 import '../widgets/clickable_text.dart';
 
@@ -86,16 +88,16 @@ class _MainScreenState extends State<MainScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Удаление репозитория'),
-        content: Text('Вы уверены, что хотите удалить репозиторий "${repository.name}" из списка?'),
+        title: Text('Delete Repository'.tr()),
+        content: Text('Are you sure you want to remove repository "{name}" from the list?'.tr().replaceAll('{name}', repository.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Отмена'),
+            child: Text('Cancel'.tr()),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Удалить'),
+            child: Text('Delete'.tr()),
           ),
         ],
       ),
@@ -123,39 +125,55 @@ class _MainScreenState extends State<MainScreen> {
                 return Icon(isMaximized ? Icons.fullscreen_exit : Icons.fullscreen);
               },
             ),
-            tooltip: 'Развернуть/Восстановить',
+            tooltip: 'Maximize/Restore'.tr(),
           ),
           IconButton(
             onPressed: () => WindowService.minimize(),
             icon: const Icon(Icons.minimize),
-            tooltip: 'Свернуть',
+            tooltip: 'Minimize'.tr(),
           ),
           PopupMenuButton(
             icon: const Icon(Icons.more_vert),
             itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'reset',
+              PopupMenuItem(
+                value: 'settings',
                 child: Row(
                   children: [
-                    Icon(Icons.restore),
-                    SizedBox(width: 8),
-                    Text('Сбросить размер окна'),
+                    const Icon(Icons.settings),
+                    const SizedBox(width: 8),
+                    Text('Settings'.tr()),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
+                value: 'reset',
+                child: Row(
+                  children: [
+                    const Icon(Icons.restore),
+                    const SizedBox(width: 8),
+                    Text('Reset Window Size'.tr()),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
                 value: 'center',
                 child: Row(
                   children: [
-                    Icon(Icons.center_focus_strong),
-                    SizedBox(width: 8),
-                    Text('Центрировать окно'),
+                    const Icon(Icons.center_focus_strong),
+                    const SizedBox(width: 8),
+                    Text('Center Window'.tr()),
                   ],
                 ),
               ),
             ],
             onSelected: (value) {
               switch (value) {
+                case 'settings':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                  );
+                  break;
                 case 'reset':
                   WindowService.resetWindowState();
                   break;
@@ -222,34 +240,34 @@ class ActionPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Действия',
+          'Actions'.tr(),
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 16),
         _buildActionButton(
           context,
-          'Создать репозиторий',
+          'Create Repository'.tr(),
           Icons.download,
           onCreateRepository,
         ),
         const SizedBox(height: 8),
         _buildActionButton(
           context,
-          'Открыть локальный репозиторий',
+          'Open Local Repository'.tr(),
           Icons.folder_open,
           onOpenRepository,
         ),
         const SizedBox(height: 8),
         _buildActionButton(
           context,
-          'Настройки пользователя',
+          'User Settings'.tr(),
           Icons.settings,
           onSettings,
         ),
         const SizedBox(height: 8),
         _buildActionButton(
           context,
-          'Расширенные настройки',
+          'Advanced Settings'.tr(),
           Icons.tune,
           onAdvancedSettings,
         ),
@@ -298,15 +316,15 @@ class RepositoryList extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Рабочие репозитории',
+            'Working Repositories'.tr(),
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 16),
           if (repositories.isEmpty)
-            const Center(
+            Center(
               child: Text(
-                'Нет рабочих репозиториев',
-                style: TextStyle(color: Colors.grey),
+                'No working repositories'.tr(),
+                style: const TextStyle(color: Colors.grey),
               ),
             )
           else
@@ -351,7 +369,7 @@ class _RepositoryCardState extends State<RepositoryCard> {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'Двойной клик для открытия репозитория',
+      message: 'Double click to open repository'.tr(),
       child: GestureDetector(
         onDoubleTap: () {
           setState(() {
@@ -412,7 +430,7 @@ class _RepositoryCardState extends State<RepositoryCard> {
                             Text(
                               widget.repository.currentRevision != null 
                                   ? 'r${widget.repository.currentRevision}'
-                                  : 'Unknown',
+                                  : 'Unknown'.tr(),
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: widget.repository.currentRevision != null
                                     ? Colors.green
@@ -451,12 +469,12 @@ class _RepositoryCardState extends State<RepositoryCard> {
                       IconButton(
                         onPressed: widget.onOpen,
                         icon: const Icon(Icons.open_in_new),
-                        tooltip: 'Открыть',
+                        tooltip: 'Open'.tr(),
                       ),
                       IconButton(
                         onPressed: widget.onDelete,
                         icon: const Icon(Icons.delete),
-                        tooltip: 'Удалить',
+                        tooltip: 'Delete'.tr(),
                       ),
                     ],
                   ),
