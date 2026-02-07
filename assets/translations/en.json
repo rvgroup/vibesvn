@@ -1,0 +1,124 @@
+{
+  "app_title": "VibeSVN",
+  "main_screen": {
+    "title": "VibeSVN",
+    "no_repositories": "No repositories",
+    "add_repository": "Add Repository",
+    "repository_actions": "Repository Actions",
+    "open": "Open",
+    "commit": "Commit",
+    "update": "Update",
+    "settings": "Settings",
+    "delete": "Delete"
+  },
+  "repository_dialog": {
+    "add_title": "Add Repository",
+    "edit_title": "Edit Repository",
+    "name": "Repository Name",
+    "name_hint": "Enter repository name",
+    "url": "Repository URL",
+    "url_hint": "https://github.com/user/repo",
+    "local_path": "Local Path",
+    "local_path_hint": "/path/to/repository",
+    "username": "Username",
+    "username_hint": "Enter username",
+    "password": "Password",
+    "password_hint": "Enter password",
+    "clone_button": "Clone",
+    "save_button": "Save",
+    "cancel_button": "Cancel",
+    "browse_button": "Browse"
+  },
+  "commit_screen": {
+    "title": "Commit",
+    "commit_message": "Commit Message",
+    "commit_message_hint": "Describe your changes...",
+    "no_files": "No modified files",
+    "select_all": "Select All",
+    "deselect_all": "Deselect All",
+    "commit_button": "Commit",
+    "cancel_button": "Cancel",
+    "ok_button": "OK",
+    "add_files": "Add Files",
+    "file_statuses": "File Statuses:",
+    "status_legend": {
+      "modified": "Modified",
+      "added": "Added",
+      "deleted": "Deleted",
+      "untracked": "Untracked",
+      "missing": "Missing",
+      "conflicted": "Conflicted",
+      "replaced": "Replaced",
+      "ignored": "Ignored",
+      "external": "External",
+      "obstructed": "Obstructed"
+    },
+    "revert": {
+      "button": "Revert",
+      "title": "Confirm Revert",
+      "confirm_message": "Revert {count} file(s)?",
+      "warning": "⚠️ All changes will be lost!",
+      "no_files_message": "No selected files to revert",
+      "success_message": "Reverted files: {count}",
+      "error_title": "Error reverting files"
+    },
+    "commit_history": {
+      "title": "Commit History",
+      "refresh_button": "Refresh History",
+      "recent_commits": "Recent Commits"
+    },
+    "templates": {
+      "title": "Commit Templates",
+      "fix": "fix: fix bug",
+      "feat": "feat: add functionality",
+      "docs": "docs: update documentation",
+      "style": "style: code formatting",
+      "refactor": "refactor: code refactoring",
+      "test": "test: add tests",
+      "chore": "chore: update dependencies"
+    }
+  },
+  "settings_screen": {
+    "title": "Settings",
+    "general": "General",
+    "language": "Interface Language",
+    "theme": "Theme",
+    "diff_tool": "Diff Tool",
+    "default_path": "Default Path",
+    "ignored_patterns": "Ignored Patterns",
+    "proxy": "Proxy Server",
+    "credentials": "Credentials",
+    "about": "About",
+    "save_button": "Save",
+    "cancel_button": "Cancel"
+  },
+  "errors": {
+    "svn_error": "SVN Operation Error",
+    "network_error": "Network Error",
+    "file_not_found": "File Not Found",
+    "permission_denied": "Permission Denied",
+    "unknown_error": "Unknown Error"
+  },
+  "messages": {
+    "success": "Operation completed successfully",
+    "repository_added": "Repository added",
+    "repository_deleted": "Repository deleted",
+    "committed_successfully": "Commit completed successfully",
+    "updated_successfully": "Repository updated successfully"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information"
+  }
+}

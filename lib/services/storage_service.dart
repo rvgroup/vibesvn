@@ -185,4 +185,17 @@ class StorageService {
       await saveWindowSize(width, height);
     }
   }
+
+  // Locale methods
+  static const String _localeKey = 'app_locale';
+
+  static Future<void> saveLocale(String locale) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_localeKey, locale);
+  }
+
+  static Future<String?> getLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_localeKey);
+  }
 }

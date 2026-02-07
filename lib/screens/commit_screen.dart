@@ -7,6 +7,7 @@ import '../models/user_settings.dart';
 import '../services/storage_service.dart';
 import '../services/svn_service.dart';
 import '../services/commit_template_service.dart';
+import '../services/locale_service.dart';
 import '../helpers/error_helper.dart';
 import '../helpers/link_helper.dart';
 import '../widgets/clickable_text.dart';
@@ -377,8 +378,8 @@ class _CommitScreenState extends State<CommitScreen> {
     
     if (revertableFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Нет выбранных файлов для восстановления'),
+        SnackBar(
+          content: Text('commit_screen.revert.no_files_message'.tr(context)),
           backgroundColor: Colors.orange,
         ),
       );
@@ -404,7 +405,7 @@ class _CommitScreenState extends State<CommitScreen> {
       if (revertResult.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Восстановлено файлов: ${filePaths.length}'),
+            content: Text('commit_screen.revert.success_message'.tr(context).replaceAll('{count}', '${filePaths.length}')),
             backgroundColor: Colors.green,
           ),
         );
@@ -412,7 +413,7 @@ class _CommitScreenState extends State<CommitScreen> {
         // Обновляем список файлов
         await _loadData();
       } else {
-        ErrorHelper.showSvnError(context, revertResult, 'Ошибка восстановления файлов');
+        ErrorHelper.showSvnError(context, revertResult, 'commit_screen.revert.error_title'.tr(context));
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -432,14 +433,14 @@ class _CommitScreenState extends State<CommitScreen> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Подтверждение восстановления'),
+        title: Text('commit_screen.revert.title'.tr(context)),
         content: SizedBox(
           width: double.maxFinite,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Восстановить ${files.length} файл(ов)?'),
+              Text('commit_screen.revert.confirm_message'.tr(context).replaceAll('{count}', '${files.length}')),
               const SizedBox(height: 12),
               Container(
                 height: 120,
@@ -489,9 +490,9 @@ class _CommitScreenState extends State<CommitScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                '⚠️ Все изменения будут утеряны!',
-                style: TextStyle(
+              Text(
+                'commit_screen.revert.warning'.tr(context),
+                style: const TextStyle(
                   color: Colors.red,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
@@ -503,7 +504,7 @@ class _CommitScreenState extends State<CommitScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Отмена'),
+            child: Text('common.cancel'.tr(context)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -511,7 +512,7 @@ class _CommitScreenState extends State<CommitScreen> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Восстановить'),
+            child: Text('commit_screen.revert.button'.tr(context)),
           ),
         ],
       ),
@@ -933,11 +934,11 @@ class _CommitScreenState extends State<CommitScreen> {
                     children: [
                       TextButton(
                         onPressed: _selectAllFiles,
-                        child: const Text('Выбрать все'),
+                        child: Text('commit_screen.select_all'.tr(context)),
                       ),
                       TextButton(
                         onPressed: _deselectAllFiles,
-                        child: const Text('Убрать все'),
+                        child: Text('commit_screen.deselect_all'.tr(context)),
                       ),
                       const Spacer(),
                       Text(
@@ -989,7 +990,7 @@ class _CommitScreenState extends State<CommitScreen> {
                                   }
                                 });
                               },
-                              child: const Text('Снять все'),
+                              child: Text('commit_screen.deselect_all'.tr(context)),
                             ),
                             TextButton(
                               style: TextButton.styleFrom(
@@ -1005,7 +1006,7 @@ class _CommitScreenState extends State<CommitScreen> {
                                   }
                                 });
                               },
-                              child: const Text('Выбрать все'),
+                              child: Text('commit_screen.select_all'.tr(context)),
                             ),
                           ],
                         ),
@@ -1032,10 +1033,10 @@ class _CommitScreenState extends State<CommitScreen> {
                   // Список файлов
                   Expanded(
                     child: _files.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Text(
-                              'Нет измененных файлов',
-                              style: TextStyle(color: Colors.grey),
+                              'commit_screen.no_files'.tr(context),
+                              style: const TextStyle(color: Colors.grey),
                             ),
                           )
                         : ListView.builder(
@@ -1153,7 +1154,7 @@ class _CommitScreenState extends State<CommitScreen> {
                           ElevatedButton.icon(
                             onPressed: _isCommitting ? null : _revertSelectedFiles,
                             icon: const Icon(Icons.restore_from_trash),
-                            label: const Text('Восстановить'),
+                            label: Text('commit_screen.revert.button'.tr(context)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red,
                               foregroundColor: Colors.white,
@@ -1171,7 +1172,7 @@ class _CommitScreenState extends State<CommitScreen> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: _isCommitting ? null : () => Navigator.pop(context),
-                          child: const Text('Отмена'),
+                          child: Text('common.cancel'.tr(context)),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -1184,7 +1185,7 @@ class _CommitScreenState extends State<CommitScreen> {
                                   height: 16,
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : const Text('OK'),
+                              : Text('commit_screen.commit_button'.tr(context)),
                         ),
                       ),
                     ],

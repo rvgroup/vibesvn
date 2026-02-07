@@ -1,0 +1,124 @@
+{
+  "app_title": "VibeSVN",
+  "main_screen": {
+    "title": "VibeSVN",
+    "no_repositories": "Нет репозиториев",
+    "add_repository": "Добавить репозиторий",
+    "repository_actions": "Действия с репозиторием",
+    "open": "Открыть",
+    "commit": "Коммит",
+    "update": "Обновить",
+    "settings": "Настройки",
+    "delete": "Удалить"
+  },
+  "repository_dialog": {
+    "add_title": "Добавить репозиторий",
+    "edit_title": "Редактировать репозиторий",
+    "name": "Имя репозитория",
+    "name_hint": "Введите имя репозитория",
+    "url": "URL репозитория",
+    "url_hint": "https://github.com/user/repo",
+    "local_path": "Локальный путь",
+    "local_path_hint": "/path/to/repository",
+    "username": "Имя пользователя",
+    "username_hint": "Введите имя пользователя",
+    "password": "Пароль",
+    "password_hint": "Введите пароль",
+    "clone_button": "Клонировать",
+    "save_button": "Сохранить",
+    "cancel_button": "Отмена",
+    "browse_button": "Обзор"
+  },
+  "commit_screen": {
+    "title": "Коммит",
+    "commit_message": "Сообщение коммита",
+    "commit_message_hint": "Опишите ваши изменения...",
+    "no_files": "Нет измененных файлов",
+    "select_all": "Выбрать все",
+    "deselect_all": "Снять все",
+    "commit_button": "Выполнить коммит",
+    "cancel_button": "Отмена",
+    "ok_button": "OK",
+    "add_files": "Добавить файлы",
+    "file_statuses": "Статусы файлов:",
+    "status_legend": {
+      "modified": "Изменен",
+      "added": "Добавлен",
+      "deleted": "Удален",
+      "untracked": "Неотслеживаемый",
+      "missing": "Отсутствует",
+      "conflicted": "Конфликт",
+      "replaced": "Заменен",
+      "ignored": "Игнорируется",
+      "external": "Внешний",
+      "obstructed": "Заблокирован"
+    },
+    "revert": {
+      "button": "Восстановить",
+      "title": "Подтверждение восстановления",
+      "confirm_message": "Восстановить {count} файл(ов)?",
+      "warning": "⚠️ Все изменения будут утеряны!",
+      "no_files_message": "Нет выбранных файлов для восстановления",
+      "success_message": "Восстановлено файлов: {count}",
+      "error_title": "Ошибка восстановления файлов"
+    },
+    "commit_history": {
+      "title": "История коммитов",
+      "refresh_button": "Обновить историю",
+      "recent_commits": "Последние коммиты"
+    },
+    "templates": {
+      "title": "Шаблоны коммитов",
+      "fix": "fix: исправить баг",
+      "feat": "feat: добавить функциональность",
+      "docs": "docs: обновить документацию",
+      "style": "style: форматирование кода",
+      "refactor": "refactor: рефакторинг кода",
+      "test": "test: добавить тесты",
+      "chore": "chore: обновление зависимостей"
+    }
+  },
+  "settings_screen": {
+    "title": "Настройки",
+    "general": "Общие",
+    "language": "Язык интерфейса",
+    "theme": "Тема",
+    "diff_tool": "Инструмент сравнения",
+    "default_path": "Папка по умолчанию",
+    "ignored_patterns": "Игнорируемые файлы",
+    "proxy": "Прокси-сервер",
+    "credentials": "Учетные данные",
+    "about": "О программе",
+    "save_button": "Сохранить",
+    "cancel_button": "Отмена"
+  },
+  "errors": {
+    "svn_error": "Ошибка SVN операции",
+    "network_error": "Ошибка сети",
+    "file_not_found": "Файл не найден",
+    "permission_denied": "Доступ запрещен",
+    "unknown_error": "Неизвестная ошибка"
+  },
+  "messages": {
+    "success": "Операция выполнена успешно",
+    "repository_added": "Репозиторий добавлен",
+    "repository_deleted": "Репозиторий удален",
+    "committed_successfully": "Коммит выполнен успешно",
+    "updated_successfully": "Репозиторий обновлен"
+  },
+  "common": {
+    "yes": "Да",
+    "no": "Нет",
+    "ok": "OK",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "add": "Добавить",
+    "close": "Закрыть",
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "warning": "Предупреждение",
+    "info": "Информация"
+  }
+}

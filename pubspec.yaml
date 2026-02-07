@@ -55,6 +55,10 @@ dependencies:
   
   # Window management
   window_manager: ^0.3.8
+  
+  # Localization
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
@@ -88,6 +92,10 @@ flutter:
 
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
+  
+  # Translation assets
+  assets:
+    - assets/translations/
 
   # To add custom fonts to your application, add a fonts section here,
   # in this "flutter" section. Each entry in this list should have a
