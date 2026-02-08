@@ -32,6 +32,7 @@ class _CommitScreenState extends State<CommitScreen> {
   bool _isCommitting = false;
   bool _isLoadingHistory = false;
   Set<String> _selectedStatuses = {}; // Выбранные статусы для фильтрации
+  String _fileFilter = ''; // Фильтр файлов по маске
 
   @override
   void initState() {
@@ -167,10 +168,29 @@ class _CommitScreenState extends State<CommitScreen> {
     });
   }
 
-  void _toggleFileSelection(int index) {
-    setState(() {
-      _files[index].isSelected = !_files[index].isSelected;
-    });
+  void _toggleFileSelection(int filteredIndex) {
+    // Находим индекс файла в оригинальном списке
+    final filteredFile = _filteredFiles[filteredIndex];
+    final originalIndex = _files.indexWhere((file) => file.path == filteredFile.path);
+    
+    if (originalIndex != -1) {
+      setState(() {
+        _files[originalIndex].isSelected = !_files[originalIndex].isSelected;
+      });
+    }
+  }
+
+  List<SvnFile> get _filteredFiles {
+    if (_fileFilter.isEmpty) return _files;
+    
+    final filterPattern = _fileFilter.replaceAll('*', '.*').replaceAll('?', '.');
+    try {
+      final regex = RegExp(filterPattern, caseSensitive: false);
+      return _files.where((file) => regex.hasMatch(file.path)).toList();
+    } catch (e) {
+      // Если regex некорректный, возвращаем пустой список
+      return [];
+    }
   }
 
   void _showCommitHistoryDialog() {
@@ -927,30 +947,6 @@ class _CommitScreenState extends State<CommitScreen> {
                   
                   const SizedBox(height: 16),
                   
-                  // Кнопки действий с файлами
-                  Row(
-                    children: [
-                      TextButton(
-                        onPressed: _selectAllFiles,
-                        child: Text('Select All'.tr()),
-                      ),
-                      TextButton(
-                        onPressed: _deselectAllFiles,
-                        child: Text('Deselect All'.tr()),
-                      ),
-                      const Spacer(),
-                      Text(
-                        'Selected: {count}'.tr().replaceAll('{count}', _files.where((f) => f.isSelected).length.toString()),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      IconButton(
-                        onPressed: _showStatusLegend,
-                        icon: const Icon(Icons.info_outline),
-                        tooltip: 'File Status Color Scheme'.tr(),
-                      ),
-                    ],
-                  ),
-                  
                   // Легенда статусов
                   Container(
                     margin: const EdgeInsets.only(top: 8),
@@ -962,86 +958,116 @@ class _CommitScreenState extends State<CommitScreen> {
                         color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 4,
                       children: [
-                        Row(
-                          children: [
-                            Text(
-                              'File Statuses:'.tr(),
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Spacer(),
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _selectedStatuses.clear();
-                                  for (final file in _files) {
-                                    file.isSelected = false;
-                                  }
-                                });
-                              },
-                              child: Text('Deselect All'.tr()),
-                            ),
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _selectedStatuses.clear();
-                                  for (final file in _files) {
-                                    file.isSelected = true;
-                                  }
-                                });
-                              },
-                              child: Text('Select All'.tr()),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 4,
-                          children: [
-                            _buildStatusLegendItem('M', 'Modified'.tr(), Colors.blue),
-                            _buildStatusLegendItem('A', 'Added'.tr(), Colors.green),
-                            _buildStatusLegendItem('D', 'Deleted'.tr(), Colors.red),
-                            _buildStatusLegendItem('?', 'Untracked'.tr(), Colors.grey),
-                            _buildStatusLegendItem('!', 'Missing'.tr(), Colors.deepOrange),
-                            _buildStatusLegendItem('C', 'Conflicted'.tr(), Colors.purple),
-                            _buildStatusLegendItem('R', 'Replaced'.tr(), Colors.teal),
-                          ],
-                        ),
+                        _buildStatusLegendItem('M', 'Modified'.tr(), Colors.blue),
+                        _buildStatusLegendItem('A', 'Added'.tr(), Colors.green),
+                        _buildStatusLegendItem('D', 'Deleted'.tr(), Colors.red),
+                        _buildStatusLegendItem('?', 'Untracked'.tr(), Colors.grey),
+                        _buildStatusLegendItem('!', 'Missing'.tr(), Colors.deepOrange),
+                        _buildStatusLegendItem('C', 'Conflicted'.tr(), Colors.purple),
+                        _buildStatusLegendItem('R', 'Replaced'.tr(), Colors.teal),
                       ],
                     ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Кнопки действий с файлами
+                  Row(
+                    children: [
+                      // Кнопки выбора слева
+                      TextButton(
+                        onPressed: _selectAllFiles,
+                        child: Text('Select All'.tr()),
+                      ),
+                      TextButton(
+                        onPressed: _deselectAllFiles,
+                        child: Text('Deselect All'.tr()),
+                      ),
+                      
+                      const SizedBox(width: 16),
+                      
+                      // Поле фильтрации в центре
+                      Icon(Icons.filter_list, size: 20, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: TextFormField(
+                          initialValue: _fileFilter,
+                          decoration: InputDecoration(
+                            hintText: 'Filter files (e.g., *.dart, src/*)'.tr(),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            isDense: true,
+                          ),
+                          onChanged: (value) {
+                            setState(() {
+                              _fileFilter = value;
+                            });
+                          },
+                        ),
+                      ),
+                      if (_fileFilter.isNotEmpty)
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _fileFilter = '';
+                            });
+                          },
+                          icon: const Icon(Icons.clear),
+                          tooltip: 'Clear filter'.tr(),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      
+                      const Spacer(),
+                      
+                      // Счетчики и информация справа
+                      Text(
+                        'Selected: {count}'.tr().replaceAll('{count}', _files.where((f) => f.isSelected).length.toString()),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      if (_fileFilter.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          'Filtered: {count}'.tr().replaceAll('{count}', _filteredFiles.length.toString()),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                      IconButton(
+                        onPressed: _showStatusLegend,
+                        icon: const Icon(Icons.info_outline),
+                        tooltip: 'File Status Color Scheme'.tr(),
+                      ),
+                    ],
                   ),
                   
                   const SizedBox(height: 8),
                   
                   // Список файлов
                   Expanded(
-                    child: _files.isEmpty
+                    child: _filteredFiles.isEmpty
                         ? Center(
                             child: Text(
-                              'No files'.tr(),
+                              _fileFilter.isEmpty ? 'No files'.tr() : 'No files match filter'.tr(),
                               style: const TextStyle(color: Colors.grey),
                             ),
                           )
                         : ListView.builder(
                             shrinkWrap: true,
-                            itemCount: _files.length,
+                            itemCount: _filteredFiles.length,
                             itemBuilder: (context, index) {
-                              final file = _files[index];
+                              final file = _filteredFiles[index];
                               return InkWell(
                                   onTap: () {
                                     // Single tap - toggle file selection

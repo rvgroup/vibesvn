@@ -45,6 +45,5 @@ app.*.map.json
 /android/app/release
 
 # Large files and build outputs
-*.zip
-*.dmg
+vibesvn-1.0.2-macos-complete.zip*.dmg
 *.app
