@@ -9,6 +9,7 @@ class UserSettings {
   final List<String> commitTemplates;
   final bool autoUpdateRepositories;
   final String externalDiffTool;
+  final String externalFileViewer;
   final ProxySettings? proxySettings;
 
   UserSettings({
@@ -42,6 +43,7 @@ class UserSettings {
     ],
     this.autoUpdateRepositories = false,
     this.externalDiffTool = '',
+    this.externalFileViewer = '',
     this.proxySettings,
   });
 
@@ -57,6 +59,7 @@ class UserSettings {
       'commitTemplates': commitTemplates,
       'autoUpdateRepositories': autoUpdateRepositories,
       'externalDiffTool': externalDiffTool,
+      'externalFileViewer': externalFileViewer,
       'proxySettings': proxySettings?.toJson(),
     };
   }
@@ -96,6 +99,7 @@ class UserSettings {
       ]),
       autoUpdateRepositories: json['autoUpdateRepositories'] ?? false,
       externalDiffTool: json['externalDiffTool'] ?? '',
+      externalFileViewer: json['externalFileViewer'] ?? '',
       proxySettings: json['proxySettings'] != null 
           ? ProxySettings.fromJson(json['proxySettings'])
           : null,
@@ -113,6 +117,7 @@ class UserSettings {
     List<String>? commitTemplates,
     bool? autoUpdateRepositories,
     String? externalDiffTool,
+    String? externalFileViewer,
     ProxySettings? proxySettings,
   }) {
     return UserSettings(
@@ -126,6 +131,7 @@ class UserSettings {
       commitTemplates: commitTemplates ?? this.commitTemplates,
       autoUpdateRepositories: autoUpdateRepositories ?? this.autoUpdateRepositories,
       externalDiffTool: externalDiffTool ?? this.externalDiffTool,
+      externalFileViewer: externalFileViewer ?? this.externalFileViewer,
       proxySettings: proxySettings ?? this.proxySettings,
     );
   }
@@ -144,6 +150,7 @@ class UserSettings {
         other.commitTemplates == commitTemplates &&
         other.autoUpdateRepositories == autoUpdateRepositories &&
         other.externalDiffTool == externalDiffTool &&
+        other.externalFileViewer == externalFileViewer &&
         other.proxySettings == proxySettings;
   }
 
@@ -159,6 +166,7 @@ class UserSettings {
         commitTemplates.hashCode ^
         autoUpdateRepositories.hashCode ^
         externalDiffTool.hashCode ^
+        externalFileViewer.hashCode ^
         proxySettings.hashCode;
   }
 

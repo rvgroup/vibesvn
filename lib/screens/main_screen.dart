@@ -6,6 +6,7 @@ import '../services/svn_service.dart';
 import '../services/window_service.dart';
 import 'repository_dialogs.dart';
 import 'commit_screen.dart';
+import 'show_log_screen.dart';
 import 'advanced_settings_dialog.dart';
 import 'settings_screen.dart';
 import '../helpers/link_helper.dart';
@@ -82,6 +83,15 @@ class _MainScreenState extends State<MainScreen> {
         builder: (context) => CommitScreen(repository: repository),
       ),
     ).then((_) => _loadRepositories());
+  }
+
+  void _openShowLogScreen(SvnRepository repository) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ShowLogScreen(repository: repository),
+      ),
+    );
   }
 
   Future<void> _deleteRepository(SvnRepository repository) async {
@@ -212,6 +222,7 @@ class _MainScreenState extends State<MainScreen> {
               repositories: repositories,
               onOpenRepository: _openCommitScreen,
               onDeleteRepository: _deleteRepository,
+              onShowLogRepository: _openShowLogScreen,
             ),
           ),
         ],
@@ -300,12 +311,14 @@ class RepositoryList extends StatelessWidget {
   final List<SvnRepository> repositories;
   final Function(SvnRepository) onOpenRepository;
   final Function(SvnRepository) onDeleteRepository;
+  final Function(SvnRepository) onShowLogRepository;
 
   const RepositoryList({
     super.key,
     required this.repositories,
     required this.onOpenRepository,
     required this.onDeleteRepository,
+    required this.onShowLogRepository,
   });
 
   @override
@@ -337,6 +350,7 @@ class RepositoryList extends StatelessWidget {
                     repository: repository,
                     onOpen: () => onOpenRepository(repository),
                     onDelete: () => onDeleteRepository(repository),
+                    onShowLog: () => onShowLogRepository(repository),
                   );
                 },
               ),
@@ -351,12 +365,14 @@ class RepositoryCard extends StatefulWidget {
   final SvnRepository repository;
   final VoidCallback onOpen;
   final VoidCallback onDelete;
+  final VoidCallback onShowLog;
 
   const RepositoryCard({
     super.key,
     required this.repository,
     required this.onOpen,
     required this.onDelete,
+    required this.onShowLog,
   });
 
   @override
@@ -470,6 +486,11 @@ class _RepositoryCardState extends State<RepositoryCard> {
                         onPressed: widget.onOpen,
                         icon: const Icon(Icons.open_in_new),
                         tooltip: 'Open'.tr(),
+                      ),
+                      IconButton(
+                        onPressed: widget.onShowLog,
+                        icon: const Icon(Icons.history),
+                        tooltip: 'Commit Log'.tr(),
                       ),
                       IconButton(
                         onPressed: widget.onDelete,

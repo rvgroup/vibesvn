@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../models/repository.dart';
 import '../models/svn_file.dart';
@@ -1068,36 +1070,14 @@ class _CommitScreenState extends State<CommitScreen> {
                             itemCount: _filteredFiles.length,
                             itemBuilder: (context, index) {
                               final file = _filteredFiles[index];
-                              return InkWell(
+                              return GestureDetector(
                                   onTap: () {
                                     // Single tap - toggle file selection
                                     _toggleFileSelection(index);
                                   },
-                                  onDoubleTap: () {
-                                    // Double tap - open folder and select file
-                                    // Check if file.path is already absolute or relative
-                                    final fullPath = file.path.startsWith('/') 
-                                        ? file.path 
-                                        : '${widget.repository.localPath}/${file.path}';
-                                    LinkHelper.openLink(fullPath);
-                                  },
-                                  onLongPress: () {
-                                    // Long press - open diff tool for modified files
-                                    if (_isFileModified(file.status)) {
-                                      // Use relative path for diff tool
-                                      final relativePath = file.path.startsWith('/') 
-                                          ? file.path.substring(widget.repository.localPath.length + 1)
-                                          : file.path;
-                                      _openDiffTool(relativePath);
-                                    } else {
-                                      // Show message for non-modified files
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('File \"{path}\" has no changes to view'.tr().replaceAll('{path}', file.path)),
-                                          duration: const Duration(seconds: 2),
-                                        ),
-                                      );
-                                    }
+                                  onLongPressStart: (details) {
+                                    // Long press - show context menu at tap position
+                                    _showFileContextMenu(file, index, details.globalPosition);
                                   },
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
@@ -1252,6 +1232,202 @@ class _CommitScreenState extends State<CommitScreen> {
         );
       }
     }
+  }
+
+  void _showFileContextMenu(SvnFile file, int index, Offset position) async {
+    final result = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx + 1,
+        position.dy + 1,
+      ),
+      items: [
+        PopupMenuItem(
+          value: 'view',
+          child: Row(
+            children: [
+              Icon(Icons.visibility, size: 16),
+              SizedBox(width: 8),
+              Text('View file'.tr()),
+            ],
+          ),
+        ),
+        if (_isFileModified(file.status))
+          PopupMenuItem(
+            value: 'diff',
+            child: Row(
+              children: [
+                Icon(Icons.compare, size: 16),
+                SizedBox(width: 8),
+                Text('View diff'.tr()),
+              ],
+            ),
+          ),
+      ],
+    );
+
+    if (result != null) {
+      _handleFileAction(result, file);
+    }
+  }
+
+  void _handleFileAction(String action, SvnFile file) {
+    switch (action) {
+      case 'view':
+        _viewFile(file);
+        break;
+      case 'diff':
+        _viewDiff(file);
+        break;
+    }
+  }
+
+  Future<void> _viewFile(SvnFile file) async {
+    try {
+      // Get user settings to check for external file viewer
+      final userSettings = await StorageService.getUserSettings();
+      final externalFileViewer = userSettings.externalFileViewer;
+      
+      // Get the relative path for SVN operations
+      final relativePath = file.path.startsWith('/') 
+          ? file.path.substring(widget.repository.localPath.length + 1) 
+          : file.path;
+      
+      if (externalFileViewer.isNotEmpty) {
+        // Use external file viewer
+        await _openExternalFileViewer(externalFileViewer, relativePath);
+      } else {
+        // Use built-in file viewer
+        final result = await SvnService.cat(widget.repository.localPath, relativePath);
+        
+        if (result.success) {
+          _showContentDialog(
+            'View file'.tr() + ': ${file.path}',
+            result.output ?? '',
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error viewing file: ${result.errorMessage}')),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error viewing file: $e')),
+      );
+    }
+  }
+
+  Future<void> _openExternalFileViewer(String viewerPath, String filePath) async {
+    try {
+      // Create temporary directory
+      final tempDir = '/tmp/vibesvn_view_${DateTime.now().millisecondsSinceEpoch}';
+      await Process.run('mkdir', ['-p', tempDir]);
+      
+      // Create simple file name (avoid subdirectories in temp)
+      final fileName = filePath.split('/').last;
+      final tempFile = '$tempDir/$fileName';
+      
+      // Get file content
+      final result = await SvnService.cat(widget.repository.localPath, filePath);
+      
+      if (result.success && result.output != null) {
+        // Write file content
+        final fileObj = File(tempFile);
+        await fileObj.writeAsString(result.output!);
+        
+        // Verify file exists
+        if (!await File(tempFile).exists()) {
+          throw Exception('Failed to create temp file: $tempFile');
+        }
+        
+        // Launch external file viewer
+        await Process.run(viewerPath, [tempFile]);
+        
+        // Schedule cleanup after 5 minutes
+        Future.delayed(const Duration(minutes: 5), () async {
+          await Process.run('rm', ['-rf', tempDir]);
+        });
+      } else {
+        throw Exception('Failed to get file content: ${result.errorMessage}');
+      }
+    } catch (e) {
+      throw Exception('Failed to open external file viewer: $e');
+    }
+  }
+
+  Future<void> _viewDiff(SvnFile file) async {
+    try {
+      // Get user settings to check for external diff tool
+      final userSettings = await StorageService.getUserSettings();
+      final externalDiffTool = userSettings.externalDiffTool;
+      
+      // Get the relative path for SVN operations
+      final relativePath = file.path.startsWith('/') 
+          ? file.path.substring(widget.repository.localPath.length + 1) 
+          : file.path;
+      
+      if (externalDiffTool.isNotEmpty) {
+        // Use external diff tool
+        await _openExternalDiffTool(externalDiffTool, relativePath);
+      } else {
+        // Use built-in diff viewer
+        final diffResult = await SvnService.getDiff(widget.repository.localPath, filePath: relativePath);
+        
+        if (diffResult.success) {
+          _showContentDialog(
+            'View diff'.tr() + ': ${file.path}',
+            diffResult.output ?? '',
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error viewing diff: ${diffResult.errorMessage}')),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error viewing diff: $e')),
+      );
+    }
+  }
+
+  void _showContentDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 500,
+          child: SingleChildScrollView(
+            child: SelectableText(
+              content.isEmpty ? 'No content available' : content,
+              style: TextStyle(fontFamily: 'monospace', fontSize: 12),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'.tr()),
+          ),
+          if (content.isNotEmpty) ...[
+            TextButton(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: content));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Content copied to clipboard')),
+                );
+              },
+              child: Text('Copy'.tr()),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   Future<void> _openExternalDiffTool(String diffToolPath, String filePath) async {

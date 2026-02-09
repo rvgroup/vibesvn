@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'package:xml/xml.dart';
 import '../models/svn_file.dart';
 import '../models/svn_result.dart';
+import '../models/svn_commit.dart';
 
 class SvnService {
   static Future<bool> isSvnInstalled() async {
@@ -382,13 +384,146 @@ class SvnService {
     }
   }
 
-  static Future<SvnResult> getDiff(String repositoryPath, {String? filePath}) async {
+  static Future<List<SvnCommit>> getDetailedLog(String path, {
+    int limit = 100,
+    String? startDate,
+    String? endDate,
+    String? searchPattern,
+  }) async {
+    try {
+      final args = <String>[
+        'log',
+        path,
+        '--xml',
+        '-v',
+        '--non-interactive'
+      ];
+      
+      if (limit > 0) {
+        args.addAll(['--limit', limit.toString()]);
+      }
+      
+      if (startDate != null || endDate != null) {
+        final dateRange = startDate != null && endDate != null 
+            ? '{$startDate}:{$endDate}'
+            : startDate != null 
+                ? '{$startDate}'
+                : ':{:$endDate}';
+        args.addAll(['-r', dateRange]);
+      }
+      
+      if (searchPattern != null && searchPattern.isNotEmpty) {
+        args.addAll(['--search', searchPattern]);
+      }
+      
+      print('DEBUG: SVN detailed log command: svn ${args.join(' ')}');
+      
+      final result = await Process.run('svn', args);
+      
+      print('DEBUG: SVN detailed log exit code: ${result.exitCode}');
+      if (result.stderr.isNotEmpty) {
+        print('DEBUG: SVN detailed log stderr: ${result.stderr}');
+      }
+      
+      if (result.exitCode != 0) {
+        print('ERROR: SVN detailed log failed');
+        return [];
+      }
+      
+      return _parseLogXml(result.stdout.toString());
+    } catch (e) {
+      print('ERROR: Exception during SVN detailed log: $e');
+      return [];
+    }
+  }
+
+  static List<SvnCommit> _parseLogXml(String xmlString) {
+    final commits = <SvnCommit>[];
+    
+    try {
+      final document = XmlDocument.parse(xmlString);
+      final logEntries = document.findAllElements('logentry');
+      
+      for (final entry in logEntries) {
+        final revision = entry.getAttribute('revision') ?? '';
+        
+        final authorElement = entry.findElements('author').firstOrNull;
+        final author = authorElement?.innerText ?? '';
+        
+        final dateElement = entry.findElements('date').firstOrNull;
+        final dateStr = dateElement?.innerText ?? '';
+        final date = dateStr.isNotEmpty ? DateTime.parse(dateStr) : DateTime.now();
+        
+        final messageElement = entry.findElements('msg').firstOrNull;
+        final message = messageElement?.innerText ?? '';
+        
+        final paths = <String>[];
+        final pathsElement = entry.findElements('paths').firstOrNull;
+        if (pathsElement != null) {
+          final pathElements = pathsElement.findElements('path');
+          for (final pathElement in pathElements) {
+            final path = pathElement.innerText;
+            if (path.isNotEmpty) {
+              paths.add(path);
+            }
+          }
+        }
+        
+        commits.add(SvnCommit(
+          revision: revision,
+          author: author,
+          date: date,
+          message: message,
+          paths: paths,
+        ));
+      }
+    } catch (e) {
+      print('ERROR: Error parsing SVN log XML: $e');
+    }
+    
+    return commits;
+  }
+
+  static Future<SvnResult> getDiff(String repositoryPath, {String? filePath, String? revisionStart, String? revisionEnd}) async {
     try {
       final args = ['diff'];
       
-      // Add specific file if provided
-      if (filePath != null) {
-        args.add(filePath);
+      // Add revision range if specified
+      if (revisionStart != null) {
+        if (revisionEnd != null) {
+          args.addAll(['-r', '$revisionStart:$revisionEnd']);
+        } else {
+          args.addAll(['-r', '$revisionStart']);
+        }
+      }
+      
+      // For revision comparisons, we need to use repository URL
+      if (revisionStart != null) {
+        // Get repository URL from working copy
+        final urlResult = await Process.run('svn', ['info', '--show-item', 'url'], 
+                                           workingDirectory: repositoryPath);
+        if (urlResult.exitCode == 0) {
+          final repoUrl = urlResult.stdout.toString().trim();
+          
+          // Add specific file if provided
+          if (filePath != null) {
+            // Ensure filePath starts with '/' for URL format
+            final normalizedPath = filePath.startsWith('/') ? filePath : '/$filePath';
+            args.add('$repoUrl$normalizedPath');
+          } else {
+            args.add(repoUrl);
+          }
+        } else {
+          // Fallback to local path if URL detection fails
+          if (filePath != null) {
+            args.add(filePath);
+          }
+        }
+      } else {
+        // For working copy diff (no revisions specified), use local path
+        if (filePath != null) {
+          args.add(filePath);
+        }
       }
       
       print('DEBUG: SVN diff command: svn ${args.join(' ')}');
@@ -445,9 +580,16 @@ class SvnService {
     }
   }
 
-  static Future<SvnResult> cat(String repositoryPath, String filePath) async {
+  static Future<SvnResult> cat(String repositoryPath, String filePath, {String? revision}) async {
     try {
-      final args = ['cat', filePath];
+      final args = ['cat'];
+      
+      // Add revision if specified
+      if (revision != null) {
+        args.addAll(['-r', revision]);
+      }
+      
+      args.add(filePath);
       
       print('DEBUG: SVN cat command: svn ${args.join(' ')}');
       print('DEBUG: Working directory: $repositoryPath');

@@ -18,6 +18,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
   
   final _defaultPathController = TextEditingController();
   final _diffToolController = TextEditingController();
+  final _fileViewerController = TextEditingController();
   final _proxyHostController = TextEditingController();
   final _proxyPortController = TextEditingController();
   final _proxyUsernameController = TextEditingController();
@@ -35,12 +36,22 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
   
   // Store diff tool value separately to ensure it's preserved
   String _diffToolValue = '';
+  String _fileViewerValue = '';
   
   // Predefined diff tools
   static const Map<String, String> _diffTools = {
     'Meld': '/opt/homebrew/bin/meld',
     'VS Code': '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code',
     'FileMerge': '/usr/bin/opendiff',
+  };
+  
+  // Predefined file viewers
+  static const Map<String, String> _fileViewers = {
+    'VS Code': '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code',
+    'Sublime Text': '/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl',
+    'TextMate': '/usr/local/bin/mate',
+    'Vim': '/usr/bin/vim',
+    'Nano': '/usr/bin/nano',
   };
 
   @override
@@ -61,8 +72,12 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
           _defaultPathController.text = settings.defaultClonePath;
           _diffToolValue = settings.externalDiffTool;
           _diffToolController.text = settings.externalDiffTool;
+          _fileViewerValue = settings.externalFileViewer;
+          _fileViewerController.text = settings.externalFileViewer;
           print('DEBUG: Set diff tool controller to: "${_diffToolController.text}"');
           print('DEBUG: Set diff tool value to: "$_diffToolValue"');
+          print('DEBUG: Set file viewer controller to: "${_fileViewerController.text}"');
+          print('DEBUG: Set file viewer value to: "$_fileViewerValue"');
           _ignoredPatterns = List.from(settings.ignoredPatterns);
           _commitTemplates = List.from(settings.commitTemplates);
           _autoUpdateRepositories = settings.autoUpdateRepositories;
@@ -129,6 +144,51 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
     }
   }
 
+  Future<void> _selectFileViewer() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Select file viewer'.tr()),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: _fileViewers.entries.map((entry) {
+            return ListTile(
+              title: Text(entry.key),
+              subtitle: Text(entry.value),
+              onTap: () => Navigator.of(context).pop(entry.value),
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'.tr()),
+          ),
+        ],
+      ),
+    );
+    
+    if (result != null) {
+      setState(() {
+        _fileViewerController.text = result;
+        _fileViewerValue = result;
+      });
+    }
+  }
+
+  Future<void> _browseFileViewer() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['exe', 'app', 'sh', 'py', ''],
+    );
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        _fileViewerController.text = result.files.single.path!;
+        _fileViewerValue = result.files.single.path!;
+      });
+    }
+  }
+
   Future<void> _browseDiffTool() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -152,7 +212,9 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
       
       // Force update the text field value
       final currentDiffToolValue = _diffToolController.text.trim();
+      final currentFileViewerValue = _fileViewerController.text.trim();
       print('DEBUG: Final diff tool value to save: "$currentDiffToolValue"');
+      print('DEBUG: Final file viewer value to save: "$currentFileViewerValue"');
       
       final proxySettings = _proxyEnabled ? ProxySettings(
         enabled: _proxyEnabled,
@@ -165,6 +227,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
       final updatedSettings = _settings.copyWith(
         defaultClonePath: _defaultPathController.text,
         externalDiffTool: currentDiffToolValue,
+        externalFileViewer: currentFileViewerValue,
         ignoredPatterns: _ignoredPatterns,
         commitTemplates: _commitTemplates,
         autoUpdateRepositories: _autoUpdateRepositories,
@@ -174,6 +237,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
       );
 
       print('DEBUG: Updated settings externalDiffTool: "${updatedSettings.externalDiffTool}"');
+      print('DEBUG: Updated settings externalFileViewer: "${updatedSettings.externalFileViewer}"');
       
       await StorageService.saveUserSettings(updatedSettings);
       
@@ -251,6 +315,46 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
                   const SizedBox(width: 4),
                   ElevatedButton.icon(
                     onPressed: _browseDiffTool,
+                    icon: const Icon(Icons.folder_open),
+                    label: Text('Browse'.tr()),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // External file viewer
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _fileViewerController,
+                      decoration: InputDecoration(
+                        labelText: 'External file viewer'.tr(),
+                        hintText: 'e.g.: /usr/bin/code'.tr(),
+                        border: const OutlineInputBorder(),
+                      ),
+                      onChanged: (value) {
+                        _fileViewerValue = value;
+                        print('DEBUG: File viewer changed to: "$value"');
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: _selectFileViewer,
+                    icon: const Icon(Icons.list),
+                    label: Text('Select'.tr()),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  ElevatedButton.icon(
+                    onPressed: _browseFileViewer,
                     icon: const Icon(Icons.folder_open),
                     label: Text('Browse'.tr()),
                     style: ElevatedButton.styleFrom(
@@ -420,6 +524,7 @@ class _AdvancedSettingsDialogState extends State<AdvancedSettingsDialog> {
   void dispose() {
     _defaultPathController.dispose();
     _diffToolController.dispose();
+    _fileViewerController.dispose();
     _proxyHostController.dispose();
     _proxyPortController.dispose();
     _proxyUsernameController.dispose();
